@@ -1,0 +1,121 @@
+\documentclass[20pt,margin=1in,innermargin=-4.5in,blockverticalspace=-0.25in]{tikzposter}
+\geometry{paperwidth=42in,paperheight=32.5in}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{mathrsfs}
+\usepackage{graphicx}
+\usepackage{adjustbox}
+\usepackage{enumitem}
+\usepackage{uwtheme}
+\usepackage{tabularx}
+\usepackage{atbegshi,picture}
+\usepackage{lipsum}
+
+
+\AtBeginShipout{\AtBeginShipoutUpperLeft{%
+  \put(\dimexpr\paperwidth-1cm\relax,-1.5cm){\makebox[0pt][r]{\framebox{\textbf{Funded by NSF SaTC award \#1815495}}}}%
+}}
+
+% set theme parameters
+\tikzposterlatexaffectionproofoff
+\usetheme{UWTheme}
+\usecolorstyle{UWStyle}
+
+\usepackage[T1]{fontenc}
+\usepackage[usefilenames,% Important for XeLaTeX
+  RMstyle={Text,Semibold},
+  SSstyle={Text,Semibold},
+  TTstyle={Text,Semibold},
+  DefaultFeatures={Ligatures=Common}]{plex-otf}
+\usepackage{inconsolata}
+\renewcommand\familydefault{\sfdefault}
+
+\title{LEADER: Low-Rate Denial-of-Service Attack Defense}
+\author{Rajat Tandon | Haoda Wang | Nicolaas Weideman | Shushan Arakelyan | Christophe Hauser | Jelena Mirkovic}
+\institute{University of Southern California - Information Sciences Institute}
+\titlegraphic{\hspace{15.5em} \includegraphics[width=0.15\textwidth]{formal_viterbi_card_black_on_white.jpg}}
+
+% begin document
+\begin{document}
+\maketitle
+\centering
+\begin{columns}
+    \column{0.32}
+    \block{Motivation}{
+        Low-rate denial-of-service(LRD) attacks are often hard to  detect at the network level as they consume little bandwidth.  It is the intricacies in the payloads and the dynamics of the attack trafic that induces denial-of-service on servers when processed by specific hardware and software. We introduce LEADER, a hybrid approach for application-agnostic and attack-agnostic detection and mitigation of LRD attacks. LEADER operates by learning normal patterns of network, application and system-level resources when processing legitimate external requests. It relies on a novel combination of runtime, system and network monitoring, as well as offline binary program analysis.
+        \vspace{1em}
+    }
+    \block{Overview}{
+        \textbf{The novelty of our approach lies in our usage of connection life stages and code path abstractions, which are built from monitoring the system at network, OS and application levels.} Figure \ref{fig:overview} shows a high-level view of the abstraction levels at which Leader operates and the system overview. It also illustrates the trade-offs between the accuracy of semantic reasoning and monitoring cost and delay. OS-level instrumentation allows an observer to gain more insights about the application’s semantics and program analysis offers the highest level of semantic reasoning. LRD attacks usually involve several incoming service requests arriving at the server that are expensive/slow processing leading to resource depletion. Figure \ref{fig:architecture} shows the architecture diagram of LEADER and its sub-modules.
+        \vspace{1em}
+        \begin{tikzfigure}[Monitoring at different abstraction levels, with the associated trade-off and System overview.]
+        \subfigure{
+            \includegraphics[width=0.47\linewidth]{Overview-a.png}
+        }
+        \subfigure{
+            \includegraphics[width=0.47\linewidth]{Overview-b.png}
+        }
+        \label{fig:overview}
+        \end{tikzfigure}
+        \vspace{1em}
+    }
+    
+    
+    \block{Types of Low-Rate Denial-of-Service Attacks}{
+        The variants of LRD attacks we focused on are:
+        \begin{itemize}
+            \item Slowloris - By opening connections to a targeted Web server and then keeping those connections open as long as it can, legitimate users cannot be served. Portions of HTTP requests are sent to the server in order to take up all the available sockets of the server.
+            \item Costly DB - Some database queries may take much more compute time to execute compared to others.
+            \item Hash Collision - Specific versions of PHP are vulnerable to a hash collision attack which increases lookup time from $O(log(n))$ to $O(n)$. %(CVE-2011-4885).
+            \item Regex - Missing sanity checks while writing regular expressions make them vulnerable to catastrophic backtracking.
+        \end{itemize}
+    }
+
+    \column{0.36}
+    \block{Behaviour Profiling and Attack Detection}{
+        SystemTap is an open source project that allows users to dynamically instrument running production Linux operating systems. It assists the diagnosis of performance related issues, but we use it to probe individual connections at system call level details. For each function call to \texttt{socket.c}, we collect information including the caller's thread ID, source IP address and port number, the time spent by the function call, memory consumed, page faults occurred, file descriptors used, and CPU cycles elapsed.
+
+
+        A thread of a given process of the Apache server is associated with a single connection at a given time. Utilizing this information, we came up with novel structures called Connection Life Stages for every connection, which captures the sequence of internal function calls to \texttt{net/socket.c} and the resource usage by each call for the function. We set the start of a connection at the \texttt{sockfd\_lookup\_light} call after a \texttt{SyS\_accept4} call and the end of a connection at the \texttt{SyS\_shutdown} or \texttt{sock\_destroy\_inode} function call. The same thread also includes internal connections, if any, that may be triggered as a result of serving a request (eg: a database query).
+        \vspace{1em}
+        \begin{tikzfigure}[Connection Life Stages of a legitimate and a hash collision attack connection]
+            \includegraphics[width=0.9\linewidth]{lifecycle-1.png}
+        \end{tikzfigure}
+        \vspace{1em}
+        \begin{tikzfigure}[Architecture diagram of LEADER]
+            \includegraphics[width=0.9\linewidth]{LEADER-Modules.png}
+        \label{fig:architecture}
+        \end{tikzfigure}
+        \vspace{1em}
+    }
+
+    \column{0.32}
+    \block{Experimental Setup}{
+        The experimental topology for LEADER includes a node for running the Web Server, a node for generating legitimate traffic, and 8 attacker nodes connected by a LAN on Emulab Testbed, as shown in figure \ref{topo}. The server node rus Apache 2.4.29 and a vulnerable version of PHP 5.6. We simulated legitimate traffic with 100 active legitimate users requesting the homepage, and created attack traffic with up to 1000 attack connections/second per attacker. The prober module captured the profiling data throughout the experiment, using Systemtap scripts, which is used for building Connection Life Stages. For training the baseline model, we captured and analyzed only legitimate traffic, while both the attack and legitimate traffic generator were turned on to capture the data for testing. We classify connections as legitimate/attack using different approaches.
+        
+        \vspace{1em}
+        \begin{tikzfigure}[Experiment topology and different attack scenarios]
+            \includegraphics[width=0.9\linewidth]{topo.png}
+        \label{topo}
+        \end{tikzfigure}
+    }
+    
+    \block{Connection Scoring}{
+        We scored each connection to classify it either as a legitimate connection or a malicious connection using different Machine Learning classification approaches such as Naive Bayes, Decision Trees, and Random Forests. These work well when trained and tested on the same attack set, but do not work well for unseen attack scenarios. While 1-class SVM intuitively seemed to fit the use case, it did not perform well. We also used Mean + 5 times standard deviation and Elliptic Envelope, both of which had good overall accuracy. The same is shown in figure \ref{accuracy}.
+        
+        \vspace{1em}
+        \begin{tikzfigure}[Classification results for (a)Elliptic Envelope and (b) Mean + 5 times Standard Deviation]
+            \includegraphics[width=\linewidth]{Results.png}
+        \label{accuracy}
+        \end{tikzfigure}
+    }
+    
+    \block{Conclusions}{
+        LEADER leverages a novel combination of runtime monitoring and offline binary program analysis to protect a deploying server against different variants of Low-Rate DDoS attacks. It effectively prevents external service requests from misusing system resources. Our next steps are to build the live version of LEADER and include attack mitigation into it, and compare its effectiveness to that of related works.
+    }
+    
+\end{columns}
+\end{document}
