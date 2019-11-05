@@ -6,7 +6,12 @@ LEADER leverages a novel combination of runtime monitoring and offline binary pr
 [Read more](https://steel.isi.edu/Projects/ddosdefense/)
 
 ## Installation
-The installation uses CMake and assumes that you have libboost and libpython available. In order to build LEADER, run the following:
+The installation uses CMake and assumes that you have the following libraries available:
+* Boost System - `libboost-system-dev` in Debian
+* libbobcat - `libbobcat-dev` in Debian
+* libpython3 - `python3-dev` in Debian
+ 
+In order to build LEADER, run the following:
 ```bash
 mkdir build && cd build
 cmake ..

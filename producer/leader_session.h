@@ -1,12 +1,12 @@
 #ifndef LEADER_SESSION_H
 #define LEADER_SESSION_H
 
-#include <algorithm>
-#include <boost/tokenizer.hpp>
-#include <iostream>
-#include <istream>
-#include <regex>
+#include <bobcat/ifdstream>
+#include <cstdio>
+#include <memory>
 #include <string>
+#include <thread>
+#include <unistd.h>
 #include <unordered_map>
 #include <vector>
 
@@ -38,12 +38,26 @@ struct Connection {
  */
 class Session {
 private:
+  const char *stap_arg =
+      "-g producer/conn.stp --suppress-handler-errors "
+      "-DMAXMAPENTRIES=8096 -vvvvv -s4095 -o /mnt/slow.csv -DINTERRUPTIBLE=0 "
+      "-DMAXTRYLOCK=10000 -DSTP_OVERLOAD_THRESHOLD=50000000000 "
+      "--suppress-time-limits";
+  std::thread t_scanner;
+  int* pipe_out;
+
+  void start_stap();
+  void scan(FBB::IFdStream *in);
+
   std::unordered_map<std::string,
-                     std::unordered_map<int, std::vector<Connection*>>>
+                     std::unordered_map<int, std::vector<Connection *>>>
       connections;
-  std::unordered_map<int, std::unordered_map<int, std::vector<Connection>>> conns;
+  std::unordered_map<int, std::unordered_map<int, std::vector<Connection>>>
+      conns;
 public:
-  void scan(std::istream* in);
+  Session();
+  ~Session();
+
   std::vector<int> get_connection_ports(std::string ip);
   std::vector<Connection> get_connection(std::string ip, int port);
   int get_size();

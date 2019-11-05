@@ -1,0 +1,110 @@
+#! /usr/bin/env stap
+/**
+ * This is the primary Systemtap script for logging connection info. It outputs
+ * in a CSV format. Currently it works with Ubuntu 18.04 only as some syscalls
+ * have changed since the 16.04 kernel. We track statistics per connection with
+ * a number of global arrays, assuming that each thread handles one connection
+ * at a time.
+ */
+global req, fault, file, clock, mem, time, connect, ip, p, call_time
+
+// __fd_install and __fd_close syscalls open and close file descriptors
+probe kernel.function("__fd_install").call {
+  if(execname() == "apache2")
+    file[tid()]++
+}
+probe kernel.function("__close_fd").call {
+  if(execname() == "apache2")
+    file[tid()]--
+}
+
+// Handles context switching per thread
+probe scheduler.ctxswitch {
+  if(next_task_name == "apache2")
+    req[next_tid]++
+}
+
+// Tracks pagefaults during per thread
+probe vm.pagefault {
+  if(execname() == "apache2")
+    fault[tid()]++
+}
+
+// These three syscalls map and unmap memory for a thread. They were mentioned
+// in the COGO paper. length in this case is in pages allocated.
+probe vm.mmap {
+  if(execname() == "apache2")
+    mem[tid()] += length
+}
+probe syscall.mmap2 {
+  if(execname() == "apache2")
+    mem[tid()] += length
+}
+probe vm.munmap {
+  if(execname() == "apache2")
+    mem[tid()] -= length
+}
+
+// We log any network in/out traffic and match it with the thread. This includes
+// but is not limited to Apache traffic.
+probe netfilter.ip.local_in {
+  ip[tid()] = saddr
+  p[tid()] = sport
+  connect[tid()] = 1
+}
+probe netfilter.ip.local_out {
+  ip[tid()] = daddr
+  p[tid()] = dport
+  connect[tid()] = 1
+}
+
+// We remember the current time when the socket.c function is called so we can measure
+// the overall duration of the function call.
+probe kernel.function("*@net/socket.c").call {
+  if(execname() == "apache2")
+    call_time[tid()] = gettimeofday_us()
+}
+
+// When the call returns, we output the all the data we currently have on the thread
+// and the syscall itself. If there is an active connection at this time, we also show
+// the remote IP and port. When the connection closes, we clear all values related to
+// the conenction so we can get accurate per-connection statistics.
+probe kernel.function("*@net/socket.c").return {
+  if(execname() == "apache2") {
+    if(connect[tid()] == 1)
+      printf("%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s,%d\n", ppfunc(), req[tid()], mem[tid()], fault[tid()], file[tid()], get_cycles() - clock[tid()], gettimeofday_us(), gettimeofday_us() - time[tid()], gettimeofday_us() - call_time[tid()], tid(), pid(), ip[tid()], p[tid()])
+    else
+      printf("%s,%d,%d,%d,%d,0,%d,0,%d,%d,%d,-1,-1\n", ppfunc(), req[tid()], mem[tid()], fault[tid()], file[tid()], gettimeofday_us(), gettimeofday_us() - call_time[tid()], tid(), pid())
+  
+    if(ppfunc() == "SyS_shutdown" || ppfunc() == "sock_destroy_inode") {
+      delete req[tid()]
+      delete fault[tid()]
+      delete file[tid()]
+      delete clock[tid()]
+      delete time[tid()]
+      delete connect[tid()]
+      delete ip[tid()]
+      delete p[tid()]
+      delete mem[tid()]
+    }
+  }
+}
+
+// When a connection is accepted, we clear all values so we can get accurate
+// per-connection statistics
+probe kernel.function("SyS_accept4").call {
+  if(execname() == "apache2") {
+    req[tid()] = 0
+    fault[tid()] = 0
+    file[tid()] = 0
+    clock[tid()] = get_cycles()
+    time[tid()] = gettimeofday_us()
+    call_time[tid()] = gettimeofday_us()
+    mem[tid()] = 0
+  }
+}
+
+// Print out the CSV header when the probe begins
+probe begin {
+  printf("func,req,mem,fault,file,cycles,time,run_time,call_time,tid,pid,addr,port\n")
+}

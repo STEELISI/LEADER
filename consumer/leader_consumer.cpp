@@ -5,18 +5,13 @@
  * @param in CSV string from leader_session
  * @return chance of attack from 0 to 1
  */
-bool model::analyze_conn(const std::string &in) {
-
-
-}
+bool model::analyze_conn(const std::string &in) {}
 
 /**
  * Loads a model into ml_model
  * @param ret void
  */
-void model::load_model(FILE *ret) {
-
-}
+void model::load_model(FILE *ret) {}
 
 /**
  * Destructor that deletes the PyObjects
@@ -32,7 +27,7 @@ model::~model() {
  */
 model::model() {
   Py_Initialize();
-  PyObject* module = PyImport_Import(PyUnicode_DecodeFSDefault("consumer/ml"));
+  PyObject *module = PyImport_Import(PyUnicode_DecodeFSDefault("consumer/ml"));
   load_func = PyObject_GetAttrString(module, "load_model");
   test_func = PyObject_GetAttrString(module, "test_model");
 }

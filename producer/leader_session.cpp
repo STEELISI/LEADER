@@ -1,4 +1,8 @@
 #include "leader_session.h"
+#include <bobcat/ifdstream>
+#include <boost/tokenizer.hpp>
+#include <csignal>
+#include <regex>
 
 // enum for the CSV inputs made by Systemtap
 enum CSV {
@@ -17,11 +21,48 @@ enum CSV {
 };
 
 /**
+ * The constructor spins off a new thread and runs start_stap() on that thread
+ */
+Session::Session() {
+  this->t_scanner = std::thread(&Session::start_stap, this);
+}
+
+/**
+ * The destructor joins t_scanner
+ */
+Session::~Session() {
+  t_scanner.join();
+}
+
+/**
+ * This function starts Systemtap as a forked process and starts scan() on it
+ */
+void Session::start_stap() {
+  pipe(pipe_out);
+  bool sync = false;
+
+  // create a fork and start stap script in it
+  pid_t pid = fork();
+  if(pid == pid_t(0)) {
+    // Start Systemtap
+    dup2(*pipe_out, 0);
+    execl("stap", stap_arg, (char*)NULL);
+    sync = true;
+  } else {
+    // Wait until Systemtap starts
+    while (!sync) {}
+    // Scan on the IFdStream
+    FBB::IFdStream ret(*pipe_out);
+    scan(&ret);
+  }
+}
+
+/**
  * This session creates a thread which scans a given stream for formatted input
  * and adds it to the corresponding connection.
  * @param in An istream to read from
  */
-void Session::scan(std::istream *in) {
+void Session::scan(FBB::IFdStream *in) {
   std::string line;
   std::regex csv_match(
       "((?:[a-z][a-z0-9_]*))(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+"
@@ -43,7 +84,7 @@ void Session::scan(std::istream *in) {
 
       // Add each element of the line into a Call object
       for (boost::tokenizer<boost::escaped_list_separator<char>>::iterator i(
-          tk.begin());
+               tk.begin());
            i != tk.end(); ++i) {
 
         if (count == func)
@@ -87,8 +128,8 @@ void Session::scan(std::istream *in) {
 
         this->conns.emplace(this_tid, pid_map);
       } else if (this->conns.find(this_tid) != this->conns.end() &&
-          this->conns.at(this_tid).find(this_pid) ==
-              this->conns.at(this_tid).end()) {
+                 this->conns.at(this_tid).find(this_pid) ==
+                     this->conns.at(this_tid).end()) {
         // TID exists but PID does not, so create PID
         Connection c;
         c.pid = pid;
@@ -142,8 +183,8 @@ void Session::scan(std::istream *in) {
 
           this->connections.emplace(ip, map);
         } else if (this->connections.find(ip) != this->connections.end() &&
-            this->connections.at(ip).find(conn_port) ==
-                this->connections.at(ip).end()) {
+                   this->connections.at(ip).find(conn_port) ==
+                       this->connections.at(ip).end()) {
           // Connections has IP but not port, and port to list
           std::vector<Connection *> vec;
           vec.push_back(this_conn);
@@ -181,7 +222,7 @@ std::vector<int> Session::get_connection_ports(std::string ip) {
   // for it
   if (connections.find(ip) != connections.end()) {
     for (std::pair<int, std::vector<Connection *>> element :
-        connections.at(ip)) {
+         connections.at(ip)) {
       ret.push_back(element.first);
     }
   }
