@@ -10,11 +10,7 @@
 int main() {
   // Stores all the connections
   Session sess;
-  Model model;
-  model.load_model("/home/harry/Downloads/elliptic_envelope.mlmodel");
-  // Loop forever, getting new lines and putting them into the right connection
-
-  freopen("/home/harry/Documents/isi/LEADER/producer/a.csv","r",stdin);
-  std::cout << sess.get_size();
+  Model model("/home/harry/Downloads/elliptic_envelope.mlmodel");
+  model.analyze_conn("1987,9,51,13,22,0,10043209,7,7,16,14,32,850,459,17,8,59,5,3,1,3,1,2,0,2,1,1,1,1,4,4,2,1,1,1,1,1");
 }
 

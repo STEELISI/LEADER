@@ -9,9 +9,8 @@ private:
   PyObject *load_func, *test_func;
 
 public:
-  void load_model(std::string load);
-  bool analyze_conn(const std::string &in);
-  Model();
+  int analyze_conn(const std::string &in);
+  explicit Model(const std::string& load);
   ~Model();
 };
 

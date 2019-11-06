@@ -25,7 +25,6 @@ def load_model(location):
 # Input connection string       #
 #===============================#
 def test_model(conn):
-    feature_values = conn.split(",")
     #conn = "1987,9,51,13,22,0,10043209,7,7,16,14,32,850,459,17,8,59,5,3,1,3,1,2,0,2,1,1,1,1,4,4,2,1,1,1,1,1"
     feature_values = conn.split(",")
     if(len(feature_values) == n_features):
