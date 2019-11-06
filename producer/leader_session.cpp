@@ -50,7 +50,7 @@ void Session::start_stap() {
     sync = true;
   } else {
     // Wait until Systemtap starts
-    while (!sync) {}
+    while (!sync) { }
     // Scan on the IFdStream
     FBB::IFdStream ret(*pipe_out);
     scan(&ret);

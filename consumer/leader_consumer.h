@@ -3,16 +3,16 @@
 #include "python3.7m/Python.h"
 #include <string>
 
-class model {
+class Model {
 private:
   PyObject *ml_model;
   PyObject *load_func, *test_func;
 
 public:
-  void load_model(FILE *ret);
+  void load_model(std::string load);
   bool analyze_conn(const std::string &in);
-  model();
-  ~model();
+  Model();
+  ~Model();
 };
 
 #endif // LEADER_CONSUMER_H

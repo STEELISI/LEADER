@@ -13,4 +13,4 @@ target_link_libraries(leader_session LINK_PUBLIC bobcat LINK_PUBLIC python3 LINK
 add_library(leader_consumer SHARED consumer/leader_consumer.cpp consumer/leader_consumer.h)
 
 add_executable(leader main.cpp)
-target_link_libraries(leader LINK_PRIVATE leader_session LINK_PRIVATE leader_consumer)
+target_link_libraries(leader LINK_PUBLIC leader_session LINK_PUBLIC leader_consumer)
