@@ -7,10 +7,10 @@ include_directories(/usr/lib/ ${Boost_INCLUDE_DIR})
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_library(leader_session SHARED producer/leader_session.cpp producer/leader_session.h)
+add_library(leader_session SHARED cls_builder/cls_builder.cpp cls_builder/cls_builder.h)
 target_link_libraries(leader_session LINK_PUBLIC bobcat LINK_PUBLIC python3 LINK_PUBLIC ${Boost_LIBRARIES})
 
-add_library(leader_consumer SHARED consumer/leader_consumer.cpp consumer/leader_consumer.h)
+add_library(leader_consumer SHARED scoring/scorer.cpp scoring/scorer.h)
 
 add_executable(leader main.cpp)
 target_link_libraries(leader LINK_PUBLIC leader_session LINK_PUBLIC leader_consumer)

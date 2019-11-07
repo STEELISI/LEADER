@@ -1,4 +1,4 @@
-#include "leader_consumer.h"
+#include "scorer.h"
 
 /**
  * Checks if a connection is an attack or not
@@ -37,7 +37,7 @@ Model::~Model() {
   PyRun_SimpleString("import sys");
   PyRun_SimpleString("import os");
   PyRun_SimpleString("sys.path.append(os.getcwd())");
-  PyObject *module = PyImport_Import(PyUnicode_DecodeFSDefault("consumer.ml"));
+  PyObject *module = PyImport_Import(PyUnicode_DecodeFSDefault("scoring.ml"));
 
   load_func = PyObject_GetAttrString(module, "load_model");
   test_func = PyObject_GetAttrString(module, "test_model");

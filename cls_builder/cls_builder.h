@@ -39,7 +39,7 @@ struct Connection {
 class Session {
 private:
   const char *stap_arg =
-      "-g producer/conn.stp --suppress-handler-errors "
+      "-g cls_builder/conn.stp --suppress-handler-errors "
       "-DMAXMAPENTRIES=8096 -vvvvv -s4095 -o /mnt/slow.csv -DINTERRUPTIBLE=0 "
       "-DMAXTRYLOCK=10000 -DSTP_OVERLOAD_THRESHOLD=50000000000 "
       "--suppress-time-limits";
