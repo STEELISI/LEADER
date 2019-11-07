@@ -6,7 +6,11 @@
  * @return chance of attack from 0 to 1
  */
 int Model::analyze_conn(const std::string &in) {
-  PyObject* conn = Py_BuildValue("y#", in.c_str(), in.size());
+
+  PyObject* conn = PyTuple_New(2);
+  PyTuple_SetItem(conn, 0, PyBytes_FromString(in.c_str()));
+  PyTuple_SetItem(conn, 1, ml_model);
+
   PyObject* ret = PyObject_CallObject(test_func, conn);
   int r = PyNumber_Check(ret);
 
@@ -44,5 +48,4 @@ Model::~Model() {
 
   Py_DECREF(str);
   Py_DECREF(module);
-  PyErr_Print();
 }
