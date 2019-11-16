@@ -1,7 +1,8 @@
 #ifndef LEADER_SESSION_H
 #define LEADER_SESSION_H
 
-#include <bobcat/ifdstream>
+// #include <bobcat/ifdstream>
+#include <boost/interprocess/ipc/message_queue.hpp>
 #include <cstdio>
 #include <memory>
 #include <string>
@@ -44,10 +45,10 @@ private:
       "-DMAXTRYLOCK=10000 -DSTP_OVERLOAD_THRESHOLD=50000000000 "
       "--suppress-time-limits";
   std::thread t_scanner;
-  int* pipe_out;
+  // int* pipe_out;
 
-  void start_stap();
-  void scan(FBB::IFdStream *in);
+  // void start_stap();
+  void scan(std::istream *in);
 
   std::unordered_map<std::string,
                      std::unordered_map<int, std::vector<Connection *>>>
@@ -55,6 +56,8 @@ private:
   std::unordered_map<int, std::unordered_map<int, std::vector<Connection>>>
       conns;
 public:
+  boost::interprocess::message_queue *mq = nullptr;
+
   Session();
   ~Session();
 

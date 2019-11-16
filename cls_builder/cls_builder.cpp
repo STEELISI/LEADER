@@ -31,12 +31,16 @@ Session::Session() {
  * The destructor joins t_scanner
  */
 Session::~Session() {
+  boost::interprocess::message_queue::remove("conns");
+  mq = new boost::interprocess::message_queue(boost::interprocess::create_only, "conns", 100, sizeof(int));
   t_scanner.join();
 }
 
 /**
+ * NOT IMPLEMENTED CORRECTLY
  * This function starts Systemtap as a forked process and starts scan() on it
  */
+/*
 void Session::start_stap() {
   pipe(pipe_out);
   bool sync = false;
@@ -56,13 +60,14 @@ void Session::start_stap() {
     scan(&ret);
   }
 }
+*/
 
 /**
  * This session creates a thread which scans a given stream for formatted input
  * and adds it to the corresponding connection.
  * @param in An istream to read from
  */
-void Session::scan(FBB::IFdStream *in) {
+void Session::scan(std::istream *in) {
   std::string line;
   std::regex csv_match(
       "((?:[a-z][a-z0-9_]*))(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+"
@@ -84,7 +89,7 @@ void Session::scan(FBB::IFdStream *in) {
 
       // Add each element of the line into a Call object
       for (boost::tokenizer<boost::escaped_list_separator<char>>::iterator i(
-               tk.begin());
+          tk.begin());
            i != tk.end(); ++i) {
 
         if (count == func)
@@ -128,8 +133,8 @@ void Session::scan(FBB::IFdStream *in) {
 
         this->conns.emplace(this_tid, pid_map);
       } else if (this->conns.find(this_tid) != this->conns.end() &&
-                 this->conns.at(this_tid).find(this_pid) ==
-                     this->conns.at(this_tid).end()) {
+          this->conns.at(this_tid).find(this_pid) ==
+              this->conns.at(this_tid).end()) {
         // TID exists but PID does not, so create PID
         Connection c;
         c.pid = pid;
@@ -183,8 +188,8 @@ void Session::scan(FBB::IFdStream *in) {
 
           this->connections.emplace(ip, map);
         } else if (this->connections.find(ip) != this->connections.end() &&
-                   this->connections.at(ip).find(conn_port) ==
-                       this->connections.at(ip).end()) {
+            this->connections.at(ip).find(conn_port) ==
+                this->connections.at(ip).end()) {
           // Connections has IP but not port, and port to list
           std::vector<Connection *> vec;
           vec.push_back(this_conn);
@@ -222,7 +227,7 @@ std::vector<int> Session::get_connection_ports(std::string ip) {
   // for it
   if (connections.find(ip) != connections.end()) {
     for (std::pair<int, std::vector<Connection *>> element :
-         connections.at(ip)) {
+        connections.at(ip)) {
       ret.push_back(element.first);
     }
   }
