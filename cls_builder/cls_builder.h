@@ -1,7 +1,6 @@
 #ifndef LEADER_SESSION_H
 #define LEADER_SESSION_H
 
-// #include <bobcat/ifdstream>
 #include <boost/interprocess/ipc/message_queue.hpp>
 #include <cstdio>
 #include <memory>

@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.12)
 project(leader)
 
-find_package(Boost 1.69 REQUIRED system)
+find_package(Boost 1.67 REQUIRED system thread)
 find_package(PythonLibs REQUIRED)
 find_package(Threads REQUIRED)
 
@@ -10,7 +10,7 @@ include_directories(/usr/lib/ ${Boost_INCLUDE_DIR} ${PYTHON_INCLUDE_DIRS})
 set(CMAKE_CXX_STANDARD 17)
 
 add_library(leader_session SHARED cls_builder/cls_builder.cpp cls_builder/cls_builder.h)
-target_link_libraries(leader_session LINK_PUBLIC bobcat LINK_PUBLIC ${PYTHON_LIBRARIES} LINK_PUBLIC ${Boost_LIBRARIES})
+target_link_libraries(leader_session LINK_PUBLIC ${PYTHON_LIBRARIES} LINK_PUBLIC ${Boost_LIBRARIES})
 
 add_library(leader_consumer SHARED scoring/scorer.cpp scoring/scorer.h)
 
