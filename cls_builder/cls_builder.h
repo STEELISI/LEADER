@@ -45,10 +45,9 @@ private:
       "-DMAXTRYLOCK=10000 -DSTP_OVERLOAD_THRESHOLD=50000000000 "
       "--suppress-time-limits";
   std::thread t_scanner;
-  // int* pipe_out;
+  int* pipe_out;
 
-  // void start_stap();
-  void scan(std::istream *in);
+  void start_stap();
 
   std::unordered_map<std::string,
                      std::unordered_map<int, std::vector<Connection *>>>
@@ -57,6 +56,7 @@ private:
       conns;
 public:
   boost::interprocess::message_queue *mq = nullptr;
+  static void scan(Session *sess, std::istream *in);
 
   Session();
   ~Session();

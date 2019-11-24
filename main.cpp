@@ -12,6 +12,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Usage: leader <model>" << std::endl;
     return 0;
   }
+
   Model model(argv[1]);
   Session sess;
   //boost::interprocess::message_queue mq(boost::interprocess::open_only, "conns");
