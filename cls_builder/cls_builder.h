@@ -38,13 +38,18 @@ struct Connection {
  */
 class Session {
 private:
-  const char *stap_arg =
-      "-g cls_builder/conn.stp --suppress-handler-errors "
-      "-DMAXMAPENTRIES=8096 -vvvvv -s4095 -o /mnt/slow.csv -DINTERRUPTIBLE=0 "
-      "-DMAXTRYLOCK=10000 -DSTP_OVERLOAD_THRESHOLD=50000000000 "
-      "--suppress-time-limits";
+  std::vector<std::string> stap_arg = {
+      "-g"
+      "cls_builder/conn.stp"
+      "--suppress-handler-errors"
+      "-DMAXMAPENTRIES=8096"
+      "-s4095"
+      "-DINTERRUPTIBLE=0"
+      "-DMAXTRYLOCK=10000"
+      "-DSTP_OVERLOAD_THRESHOLD=50000000000"
+      "--suppress-time-limits"};
   std::thread t_scanner;
-  int* pipe_out;
+  int *pipe_out;
 
   void start_stap();
 
@@ -55,7 +60,7 @@ private:
       conns;
 public:
   boost::interprocess::message_queue *mq = nullptr;
-  static void scan(Session *sess, std::istream *in);
+  void scan(std::istream *in);
 
   Session();
   ~Session();

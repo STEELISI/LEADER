@@ -32,7 +32,8 @@ Session::Session() {
  */
 Session::~Session() {
   boost::interprocess::message_queue::remove("conns");
-  mq = new boost::interprocess::message_queue(boost::interprocess::create_only, "conns", 100, sizeof(int));
+  mq = new boost::interprocess::message_queue(boost::interprocess::create_only,
+                                              "conns", 100, sizeof(int));
   t_scanner.join();
 }
 
@@ -41,8 +42,9 @@ Session::~Session() {
  * This function starts Systemtap as a forked process and starts scan() on it
  */
 void Session::start_stap() {
-    boost::process::ipstream stap_out;
-    std::thread stap_reader(&Session::scan, this, stap_out);
+  boost::process::ipstream stap_out;
+  boost::process::child stap_process("/usr/bin/stap", stap_arg, boost::process::std_out > stap_out);
+  std::thread stap_reader(&Session::scan, this, &stap_out);
 }
 
 /**
@@ -50,7 +52,7 @@ void Session::start_stap() {
  * and adds it to the corresponding connection.
  * @param in An istream to read from
  */
-void Session::scan(Session *sess, std::istream *in) {
+void Session::scan(std::istream *in) {
   std::string line;
   std::regex csv_match(
       "((?:[a-z][a-z0-9_]*))(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+"
@@ -72,7 +74,7 @@ void Session::scan(Session *sess, std::istream *in) {
 
       // Add each element of the line into a Call object
       for (boost::tokenizer<boost::escaped_list_separator<char>>::iterator i(
-          tk.begin());
+               tk.begin());
            i != tk.end(); ++i) {
 
         if (count == func)
@@ -101,7 +103,7 @@ void Session::scan(Session *sess, std::istream *in) {
       }
 
       // Add Call object into correct location in Session
-      if (sess->conns.find(this_tid) == sess->conns.end()) {
+      if (this->conns.find(this_tid) == this->conns.end()) {
         // PID and TID pair does not exist, so create both and add to conns
         Connection c;
         c.pid = pid;
@@ -114,10 +116,10 @@ void Session::scan(Session *sess, std::istream *in) {
         std::unordered_map<int, std::vector<Connection>> pid_map;
         pid_map.emplace(this_pid, vec);
 
-        sess->conns.emplace(this_tid, pid_map);
-      } else if (sess->conns.find(this_tid) != sess->conns.end() &&
-          sess->conns.at(this_tid).find(this_pid) ==
-              sess->conns.at(this_tid).end()) {
+        this->conns.emplace(this_tid, pid_map);
+      } else if (this->conns.find(this_tid) != this->conns.end() &&
+                 this->conns.at(this_tid).find(this_pid) ==
+                     this->conns.at(this_tid).end()) {
         // TID exists but PID does not, so create PID
         Connection c;
         c.pid = pid;
@@ -127,11 +129,11 @@ void Session::scan(Session *sess, std::istream *in) {
         std::vector<Connection> vec;
         vec.push_back(c);
 
-        auto pid_map = sess->conns.at(this_tid);
+        auto pid_map = this->conns.at(this_tid);
         pid_map.emplace(this_pid, vec);
       } else {
         // TID and PID pair already exist, so add to it
-        auto conn = &sess->conns.at(this_tid).at(this_pid);
+        auto conn = &this->conns.at(this_tid).at(this_pid);
         if (conn->empty() ||
             conn->back().syscall_list.back().syscall_name == "SyS_shutdown" ||
             conn->back().syscall_list.back().syscall_name ==
@@ -153,7 +155,7 @@ void Session::scan(Session *sess, std::istream *in) {
       // Link Connection to IP address and Port
       // TODO: only if IP is 10.10.1.*
       if (has_port) {
-        Connection *this_conn = &sess->conns.at(this_tid).at(this_pid).back();
+        Connection *this_conn = &this->conns.at(this_tid).at(this_pid).back();
         // Only link if connection does not have a port yet
         if (this_conn->port == 0) {
           this_conn->port = conn_port;
@@ -161,7 +163,7 @@ void Session::scan(Session *sess, std::istream *in) {
         }
 
         // Add port to connections map
-        if (sess->connections.find(ip) == sess->connections.end()) {
+        if (this->connections.find(ip) == this->connections.end()) {
           // Connections has neither IP and port, add IP and port to list
           std::vector<Connection *> vec;
           vec.push_back(this_conn);
@@ -169,18 +171,18 @@ void Session::scan(Session *sess, std::istream *in) {
           std::unordered_map<int, std::vector<Connection *>> map;
           map.emplace(conn_port, vec);
 
-          sess->connections.emplace(ip, map);
-        } else if (sess->connections.find(ip) != sess->connections.end() &&
-            sess->connections.at(ip).find(conn_port) ==
-                sess->connections.at(ip).end()) {
+          this->connections.emplace(ip, map);
+        } else if (this->connections.find(ip) != this->connections.end() &&
+                   this->connections.at(ip).find(conn_port) ==
+                       this->connections.at(ip).end()) {
           // Connections has IP but not port, and port to list
           std::vector<Connection *> vec;
           vec.push_back(this_conn);
 
-          sess->connections.at(ip).emplace(port, vec);
+          this->connections.at(ip).emplace(port, vec);
         } else {
           // Connections already has both IP and port, just append
-          sess->connections.at(ip).at(conn_port).push_back(this_conn);
+          this->connections.at(ip).at(conn_port).push_back(this_conn);
         }
       }
     }
@@ -193,7 +195,7 @@ void Session::scan(Session *sess, std::istream *in) {
  */
 int Session::get_size() {
   int ret = 0;
-  for (auto i : this->conns)
+  for (const auto& i : this->conns)
     for (auto it : i.second)
       ret++;
   return ret;
@@ -210,7 +212,7 @@ std::vector<int> Session::get_connection_ports(std::string ip) {
   // for it
   if (connections.find(ip) != connections.end()) {
     for (std::pair<int, std::vector<Connection *>> element :
-        connections.at(ip)) {
+         connections.at(ip)) {
       ret.push_back(element.first);
     }
   }
