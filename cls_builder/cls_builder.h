@@ -38,26 +38,23 @@ struct Connection {
  */
 class Session {
 private:
-  std::vector<std::string> stap_arg = {
-      "-g"
-      "cls_builder/conn.stp"
-      "--suppress-handler-errors"
-      "-DMAXMAPENTRIES=8096"
-      "-s4095"
-      "-DINTERRUPTIBLE=0"
-      "-DMAXTRYLOCK=10000"
-      "-DSTP_OVERLOAD_THRESHOLD=50000000000"
-      "--suppress-time-limits"};
+  std::vector<std::string> stap_arg = {"-g"
+                                       "cls_builder/conn.stp"
+                                       "--suppress-handler-errors"
+                                       "-DMAXMAPENTRIES=8096"
+                                       "-s4095"
+                                       "-DINTERRUPTIBLE=0"
+                                       "-DMAXTRYLOCK=10000"
+                                       "-DSTP_OVERLOAD_THRESHOLD=50000000000"
+                                       "--suppress-time-limits"};
   std::thread t_scanner;
-  int *pipe_out;
-
-  void start_stap();
 
   std::unordered_map<std::string,
                      std::unordered_map<int, std::vector<Connection *>>>
       connections;
   std::unordered_map<int, std::unordered_map<int, std::vector<Connection>>>
       conns;
+
 public:
   boost::interprocess::message_queue *mq = nullptr;
   void scan(std::istream *in);
@@ -65,8 +62,8 @@ public:
   Session();
   ~Session();
 
-  std::vector<int> get_connection_ports(std::string ip);
-  std::vector<Connection> get_connection(std::string ip, int port);
+  std::vector<int> get_connection_ports(const std::string& ip);
+  std::vector<Connection> get_connection(const std::string& ip, int port);
   int get_size();
 };
 

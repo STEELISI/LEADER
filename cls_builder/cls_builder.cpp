@@ -1,6 +1,5 @@
 #include "cls_builder.h"
 #include <boost/process.hpp>
-#include <boost/process/async.hpp>
 #include <boost/tokenizer.hpp>
 #include <regex>
 
@@ -24,27 +23,24 @@ enum CSV {
  * The constructor spins off a new thread and runs start_stap() on that thread
  */
 Session::Session() {
-  this->t_scanner = std::thread(&Session::start_stap, this);
-}
-
-/**
- * The destructor joins t_scanner
- */
-Session::~Session() {
+  // Initialize message queue
   boost::interprocess::message_queue::remove("conns");
   mq = new boost::interprocess::message_queue(boost::interprocess::create_only,
                                               "conns", 100, sizeof(int));
-  t_scanner.join();
+
+  // Start stap process and scanning
+  boost::process::ipstream stap_out;
+  boost::process::child stap_process("/usr/bin/stap", stap_arg,
+                                     boost::process::std_out > stap_out);
+  this->t_scanner = std::thread(&Session::scan, this, &stap_out);
 }
 
 /**
- * NOT IMPLEMENTED CORRECTLY
- * This function starts Systemtap as a forked process and starts scan() on it
+ * The destructor joins t_scanner and removes the message queue
  */
-void Session::start_stap() {
-  boost::process::ipstream stap_out;
-  boost::process::child stap_process("/usr/bin/stap", stap_arg, boost::process::std_out > stap_out);
-  std::thread stap_reader(&Session::scan, this, &stap_out);
+Session::~Session() {
+  boost::interprocess::message_queue::remove("conns");
+  t_scanner.join();
 }
 
 /**
@@ -195,7 +191,7 @@ void Session::scan(std::istream *in) {
  */
 int Session::get_size() {
   int ret = 0;
-  for (const auto& i : this->conns)
+  for (const auto &i : this->conns)
     for (auto it : i.second)
       ret++;
   return ret;
@@ -206,7 +202,7 @@ int Session::get_size() {
  * @param ip The IP address to look up
  * @return An empty vector, or a vector of ports used
  */
-std::vector<int> Session::get_connection_ports(std::string ip) {
+std::vector<int> Session::get_connection_ports(const std::string& ip) {
   std::vector<int> ret;
   // Check if client exists in connection list, and then get the list of ports
   // for it
@@ -225,7 +221,7 @@ std::vector<int> Session::get_connection_ports(std::string ip) {
  * @param port The port to look up
  * @return A vector of Connections with the given port and IP, or nullptr
  */
-std::vector<Connection> Session::get_connection(std::string ip, int port) {
+std::vector<Connection> Session::get_connection(const std::string& ip, int port) {
   std::vector<Connection> ret;
   // Check if the connection vector exists and add to ret, then remove
   if (connections.find(ip) != connections.end() &&
@@ -255,11 +251,11 @@ std::vector<Connection> Session::get_connection(std::string ip, int port) {
  * @return A string that the consumer can parse
  */
 std::string Connection::toString() {
-  std::string output1 = "", output2 = "";
+  std::string output1, output2;
   std::unordered_map<std::string, int> functions;
   // Add each syscall function into the functions object if it doesn't exist, or
   // add one to the count
-  for (std::vector<Call>::iterator it = this->syscall_list.begin();
+  for (auto it = this->syscall_list.begin();
        it != this->syscall_list.end(); it++) {
     auto l = functions.find(it->syscall_name);
     if (l == functions.end())
@@ -269,7 +265,7 @@ std::string Connection::toString() {
   }
 
   // Convert the map to a string
-  for (auto i : functions) {
+  for (const auto& i : functions) {
     output1 += i.first + ",";
     output2 += std::to_string(i.second) + ",";
   }
