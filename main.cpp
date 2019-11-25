@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
 
   Model model(argv[1]);
   Session sess;
-  //boost::interprocess::message_queue mq(boost::interprocess::open_only, "conns");
+  boost::interprocess::message_queue mq(boost::interprocess::open_only, "conns");
   // Stores all the connections
   std::cout << model.analyze_conn("1987,9,51,13,22,0,10043209,7,7,16,14,32,850,459,17,8,59,5,3,1,3,1,2,0,2,1,1,1,1,4,4,2,1,1,1,1,1");
   return 0;

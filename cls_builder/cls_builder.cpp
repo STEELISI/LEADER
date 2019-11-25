@@ -70,7 +70,7 @@ void Session::scan(std::istream *in) {
 
       // Add each element of the line into a Call object
       for (boost::tokenizer<boost::escaped_list_separator<char>>::iterator i(
-               tk.begin());
+          tk.begin());
            i != tk.end(); ++i) {
 
         if (count == func)
@@ -114,8 +114,8 @@ void Session::scan(std::istream *in) {
 
         this->conns.emplace(this_tid, pid_map);
       } else if (this->conns.find(this_tid) != this->conns.end() &&
-                 this->conns.at(this_tid).find(this_pid) ==
-                     this->conns.at(this_tid).end()) {
+          this->conns.at(this_tid).find(this_pid) ==
+              this->conns.at(this_tid).end()) {
         // TID exists but PID does not, so create PID
         Connection c;
         c.pid = pid;
@@ -169,8 +169,8 @@ void Session::scan(std::istream *in) {
 
           this->connections.emplace(ip, map);
         } else if (this->connections.find(ip) != this->connections.end() &&
-                   this->connections.at(ip).find(conn_port) ==
-                       this->connections.at(ip).end()) {
+            this->connections.at(ip).find(conn_port) ==
+                this->connections.at(ip).end()) {
           // Connections has IP but not port, and port to list
           std::vector<Connection *> vec;
           vec.push_back(this_conn);
@@ -202,13 +202,13 @@ int Session::get_size() {
  * @param ip The IP address to look up
  * @return An empty vector, or a vector of ports used
  */
-std::vector<int> Session::get_connection_ports(const std::string& ip) {
+std::vector<int> Session::get_connection_ports(const std::string &ip) {
   std::vector<int> ret;
   // Check if client exists in connection list, and then get the list of ports
   // for it
   if (connections.find(ip) != connections.end()) {
     for (std::pair<int, std::vector<Connection *>> element :
-         connections.at(ip)) {
+        connections.at(ip)) {
       ret.push_back(element.first);
     }
   }
@@ -221,7 +221,7 @@ std::vector<int> Session::get_connection_ports(const std::string& ip) {
  * @param port The port to look up
  * @return A vector of Connections with the given port and IP, or nullptr
  */
-std::vector<Connection> Session::get_connection(const std::string& ip, int port) {
+std::vector<Connection> Session::get_connection(const std::string &ip, int port) {
   std::vector<Connection> ret;
   // Check if the connection vector exists and add to ret, then remove
   if (connections.find(ip) != connections.end() &&
@@ -251,27 +251,27 @@ std::vector<Connection> Session::get_connection(const std::string& ip, int port)
  * @return A string that the consumer can parse
  */
 std::string Connection::toString() {
-  std::string output1, output2;
+  std::string ret;
   std::unordered_map<std::string, int> functions;
   // Add each syscall function into the functions object if it doesn't exist, or
   // add one to the count
-  for (auto it = this->syscall_list.begin();
-       it != this->syscall_list.end(); it++) {
-    auto l = functions.find(it->syscall_name);
+  for (auto &it : this->syscall_list) {
+    auto l = functions.find(it.syscall_name);
     if (l == functions.end())
-      functions.emplace(it->syscall_name, 1);
+      functions.emplace(it.syscall_name, 1);
     else
       l->second += 1;
   }
 
-  // Convert the map to a string
-  for (const auto& i : functions) {
-    output1 += i.first + ",";
-    output2 += std::to_string(i.second) + ",";
+  const std::vector<std::string> vect =
+      {"sock_poll", "sock_write_iter", "sockfd_lookup_light", "sock_alloc_inode", "sock_alloc", "sock_alloc_file",
+       "move_addr_to_user", "SYSC_getsockname", "SyS_getsockname", "SYSC_accept4", "sock_destroy_inode",
+       "sock_read_iter", "sock_recvmsg", "sock_sendmsg", "__sock_release", "SyS_accept4", "SyS_shutdown", "sock_close"};
+  for (const auto &entry : vect) {
+    if (functions.find(entry) != functions.end())
+      ret += std::to_string(functions[entry]) + ",";
+    else
+      ret.append("0,");
   }
-
-  output1.pop_back();
-  output2.pop_back();
-
-  return output1 + "\n" + output2;
+  return ret.substr(0, ret.size() - 1);
 }

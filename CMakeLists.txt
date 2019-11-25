@@ -15,4 +15,4 @@ target_link_libraries(leader_session LINK_PUBLIC ${PYTHON_LIBRARIES} LINK_PUBLIC
 add_library(leader_consumer SHARED scoring/scorer.cpp scoring/scorer.h)
 
 add_executable(leader main.cpp)
-target_link_libraries(leader LINK_PUBLIC leader_session LINK_PUBLIC leader_consumer ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(leader LINK_PUBLIC rt LINK_PUBLIC leader_session LINK_PUBLIC leader_consumer ${CMAKE_THREAD_LIBS_INIT})
