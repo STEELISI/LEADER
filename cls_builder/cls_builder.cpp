@@ -1,7 +1,7 @@
 #include "cls_builder.h"
-#include <boost/process.hpp>
 #include <boost/tokenizer.hpp>
 #include <regex>
+#include <iostream>
 
 // enum for the CSV inputs made by Systemtap
 enum CSV {
@@ -29,8 +29,7 @@ Session::Session() {
                                               "conns", 100, sizeof(Connection*));
 
   // Start stap process and scanning
-  boost::process::ipstream stap_out;
-  boost::process::child stap_process("/usr/bin/stap", stap_arg,
+  stap_process = boost::process::child("/usr/bin/stap", stap_arg,
                                      boost::process::std_out > stap_out);
   this->t_scanner = std::thread(&Session::scan, this, &stap_out);
 }
@@ -57,6 +56,7 @@ void Session::scan(std::istream *in) {
   while (std::getline(*in, line)) {
     // Only match if it is a data line and not extra stuff
     if (std::regex_match(line, csv_match)) {
+      std::cout << "line out" << std::endl;
       // Call to add to a connection
       Call this_call;
       unsigned int this_tid, this_pid, conn_port;

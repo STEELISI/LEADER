@@ -2,6 +2,7 @@
 #define LEADER_SESSION_H
 
 #include <boost/interprocess/ipc/message_queue.hpp>
+#include <boost/process.hpp>
 #include <cstdio>
 #include <memory>
 #include <string>
@@ -54,7 +55,8 @@ private:
       connections;
   std::unordered_map<int, std::unordered_map<int, std::vector<Connection>>>
       conns;
-
+  boost::process::ipstream stap_out;
+  boost::process::child stap_process;
 public:
   boost::interprocess::message_queue *mq = nullptr;
   void scan(std::istream *in);
