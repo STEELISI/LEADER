@@ -62,9 +62,10 @@ public:
   Session();
   ~Session();
 
-  std::vector<int> get_connection_ports(const std::string& ip);
-  std::vector<Connection> get_connection(const std::string& ip, int port);
+  std::vector<int> get_connection_ports(const std::string &ip);
+  std::vector<Connection> get_connection(const std::string &ip, int port);
   int get_size();
+  void remove_conn(Connection *c);
 };
 
 #endif

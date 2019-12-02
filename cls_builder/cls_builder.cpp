@@ -26,7 +26,7 @@ Session::Session() {
   // Initialize message queue
   boost::interprocess::message_queue::remove("conns");
   mq = new boost::interprocess::message_queue(boost::interprocess::create_only,
-                                              "conns", 100, sizeof(int));
+                                              "conns", 100, sizeof(Connection*));
 
   // Start stap process and scanning
   boost::process::ipstream stap_out;
@@ -134,6 +134,7 @@ void Session::scan(std::istream *in) {
             conn->back().syscall_list.back().syscall_name == "SyS_shutdown" ||
             conn->back().syscall_list.back().syscall_name ==
                 "sock_destroy_inode") {
+          this->mq->send(&conn->back(), sizeof(Connection *), 0);
           // Last Connection ended, this is a new Connection, so create a new
           // one and add to syscall_list
           Connection c;
@@ -195,6 +196,14 @@ int Session::get_size() {
     for (auto it : i.second)
       ret++;
   return ret;
+}
+
+/**
+ * This function removes a connection given a pointer for it
+ * @param c The connection to remove
+ */
+void Session::remove_conn(Connection *c) {
+
 }
 
 /**
