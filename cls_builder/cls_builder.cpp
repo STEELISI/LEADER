@@ -1,7 +1,7 @@
 #include "cls_builder.h"
 #include <boost/tokenizer.hpp>
-#include <regex>
 #include <iostream>
+#include <regex>
 
 // enum for the CSV inputs made by Systemtap
 enum CSV {
@@ -25,12 +25,17 @@ enum CSV {
 Session::Session() {
   // Initialize message queue
   boost::interprocess::message_queue::remove("conns");
-  mq = new boost::interprocess::message_queue(boost::interprocess::create_only,
-                                              "conns", 100, sizeof(Connection*));
+  mq = new boost::interprocess::message_queue(
+      boost::interprocess::create_only, "conns", 100, sizeof(Connection *));
 
   // Start stap process and scanning
-  stap_process = boost::process::child("/usr/bin/stap", stap_arg,
-                                     boost::process::std_out > stap_out);
+  stap_process = boost::process::child(
+      "/usr/bin/stap",
+      boost::process::args(
+          {"-g", "./cls_builder/conn.stp", "--suppress-handler-errors",
+           "-DMAXMAPENTRIES=8096", "-s4095", "-DINTERRUPTIBLE=0", "-DMAXTRYLOCK=10000",
+           "-DSTP_OVERLOAD_THRESHOLD=50000000000", "--suppress-time-limits"}),
+      boost::process::std_out > stap_out);
   this->t_scanner = std::thread(&Session::scan, this, &stap_out);
 }
 
@@ -70,7 +75,7 @@ void Session::scan(std::istream *in) {
 
       // Add each element of the line into a Call object
       for (boost::tokenizer<boost::escaped_list_separator<char>>::iterator i(
-          tk.begin());
+               tk.begin());
            i != tk.end(); ++i) {
 
         if (count == func)
@@ -114,8 +119,8 @@ void Session::scan(std::istream *in) {
 
         this->conns.emplace(this_tid, pid_map);
       } else if (this->conns.find(this_tid) != this->conns.end() &&
-          this->conns.at(this_tid).find(this_pid) ==
-              this->conns.at(this_tid).end()) {
+                 this->conns.at(this_tid).find(this_pid) ==
+                     this->conns.at(this_tid).end()) {
         // TID exists but PID does not, so create PID
         Connection c;
         c.pid = pid;
@@ -170,8 +175,8 @@ void Session::scan(std::istream *in) {
 
           this->connections.emplace(ip, map);
         } else if (this->connections.find(ip) != this->connections.end() &&
-            this->connections.at(ip).find(conn_port) ==
-                this->connections.at(ip).end()) {
+                   this->connections.at(ip).find(conn_port) ==
+                       this->connections.at(ip).end()) {
           // Connections has IP but not port, and port to list
           std::vector<Connection *> vec;
           vec.push_back(this_conn);
@@ -202,9 +207,7 @@ int Session::get_size() {
  * This function removes a connection given a pointer for it
  * @param c The connection to remove
  */
-void Session::remove_conn(Connection *c) {
-
-}
+void Session::remove_conn(Connection *c) {}
 
 /**
  * This function gets the ports of all connections for a given IP in a session.
@@ -217,7 +220,7 @@ std::vector<int> Session::get_connection_ports(const std::string &ip) {
   // for it
   if (connections.find(ip) != connections.end()) {
     for (std::pair<int, std::vector<Connection *>> element :
-        connections.at(ip)) {
+         connections.at(ip)) {
       ret.push_back(element.first);
     }
   }
@@ -230,7 +233,8 @@ std::vector<int> Session::get_connection_ports(const std::string &ip) {
  * @param port The port to look up
  * @return A vector of Connections with the given port and IP, or nullptr
  */
-std::vector<Connection> Session::get_connection(const std::string &ip, int port) {
+std::vector<Connection> Session::get_connection(const std::string &ip,
+                                                int port) {
   std::vector<Connection> ret;
   // Check if the connection vector exists and add to ret, then remove
   if (connections.find(ip) != connections.end() &&
@@ -272,10 +276,13 @@ std::string Connection::toString() {
       l->second += 1;
   }
 
-  const std::vector<std::string> vect =
-      {"sock_poll", "sock_write_iter", "sockfd_lookup_light", "sock_alloc_inode", "sock_alloc", "sock_alloc_file",
-       "move_addr_to_user", "SYSC_getsockname", "SyS_getsockname", "SYSC_accept4", "sock_destroy_inode",
-       "sock_read_iter", "sock_recvmsg", "sock_sendmsg", "__sock_release", "SyS_accept4", "SyS_shutdown", "sock_close"};
+  const std::vector<std::string> vect = {
+      "sock_poll",         "sock_write_iter",    "sockfd_lookup_light",
+      "sock_alloc_inode",  "sock_alloc",         "sock_alloc_file",
+      "move_addr_to_user", "SYSC_getsockname",   "SyS_getsockname",
+      "SYSC_accept4",      "sock_destroy_inode", "sock_read_iter",
+      "sock_recvmsg",      "sock_sendmsg",       "__sock_release",
+      "SyS_accept4",       "SyS_shutdown",       "sock_close"};
   for (const auto &entry : vect) {
     if (functions.find(entry) != functions.end())
       ret += std::to_string(functions[entry]) + ",";
