@@ -1,5 +1,6 @@
 #include "cls_builder.h"
 #include <boost/tokenizer.hpp>
+#include <exception>
 #include <iostream>
 #include <regex>
 
@@ -44,6 +45,7 @@ Session::Session() {
  */
 Session::~Session() {
   boost::interprocess::message_queue::remove("conns");
+  stap_process.terminate();
   t_scanner.join();
 }
 
