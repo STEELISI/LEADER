@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.10)
 project(leader)
 
-find_package(Boost 1.67 REQUIRED system thread)
+find_package(Boost 1.65 REQUIRED system thread)
 find_package(Python3 COMPONENTS Interpreter Development)
 find_package(Threads REQUIRED)
 
