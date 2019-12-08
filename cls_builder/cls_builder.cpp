@@ -31,7 +31,7 @@ Session::Session() {
 
   // Start stap process and scanning
   stap_process = boost::process::child(
-      "/usr/bin/stap",
+      "/usr/local/bin/stap",
       boost::process::args(
           {"-g", "./cls_builder/conn.stp", "--suppress-handler-errors",
            "-DMAXMAPENTRIES=8096", "-s4095", "-DINTERRUPTIBLE=0", "-DMAXTRYLOCK=10000",

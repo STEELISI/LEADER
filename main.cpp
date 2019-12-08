@@ -28,8 +28,10 @@ int main(int argc, char *argv[]) {
     mq.receive(conn, sizeof(Connection *), recvd_size, priority);
 
     if (conn != nullptr) {
-      std::cout << model.analyze_conn(conn->toString());
-    }
+      std::cout << conn->toString() << std::endl;
+      std::cout << model.analyze_conn(conn->toString()) << std::endl;
+    } else
+	  std::cout << "nullptr conn" << std::endl;
   }
   return 0;
 }
