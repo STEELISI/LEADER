@@ -64,7 +64,6 @@ void Session::scan(std::istream *in) {
   while (std::getline(*in, line)) {
     // Only match if it is a data line and not extra stuff
     if (std::regex_match(line, csv_match)) {
-      std::cout << "line out" << std::endl;
       // Call to add to a connection
       Call this_call;
       unsigned int this_tid, this_pid, conn_port;
@@ -105,6 +104,7 @@ void Session::scan(std::istream *in) {
 
         count++;
       }
+      std::cout << "stap call - tid: " << this_tid << std::endl;
 
       // Add Call object into correct location in Session
       if (this->conns.find(this_tid) == this->conns.end()) {
@@ -144,6 +144,7 @@ void Session::scan(std::istream *in) {
             conn->back().syscall_list.back().syscall_name.compare(
                 "sock_destroy_inode") == 0) {
           this->mq->send(&conn->back(), sizeof(Connection *), 0);
+          std::cout << "msg send" << std::endl;
           // Last Connection ended, this is a new Connection, so create a new
           // one and add to syscall_list
           Connection c;

@@ -23,15 +23,16 @@ int main(int argc, char *argv[]) {
   // Read from message queue
   while (true) {
     Connection *conn;
-    boost::interprocess::message_queue::size_type recvd_size;
+
     unsigned int priority;
     mq.receive(conn, sizeof(Connection *), recvd_size, priority);
 
+    std::cout << "recieved message" << std::endl;
     if (conn != nullptr) {
       std::cout << conn->toString() << std::endl;
       std::cout << model.analyze_conn(conn->toString()) << std::endl;
     } else
-	  std::cout << "nullptr conn" << std::endl;
+      std::cout << "nullptr conn" << std::endl;
   }
   return 0;
 }
