@@ -32,10 +32,11 @@ Session::Session() {
   // Start stap process and scanning
   stap_process = boost::process::child(
       "/usr/local/bin/stap",
-      boost::process::args(
-          {"-g", "./cls_builder/conn.stp", "--suppress-handler-errors",
-           "-DMAXMAPENTRIES=8096", "-s4095", "-DINTERRUPTIBLE=0", "-DMAXTRYLOCK=10000",
-           "-DSTP_OVERLOAD_THRESHOLD=50000000000", "--suppress-time-limits"}),
+      boost::process::args({"-g", "./cls_builder/conn.stp",
+                            "--suppress-handler-errors", "-DMAXMAPENTRIES=8096",
+                            "-s4095", "-DINTERRUPTIBLE=0", "-DMAXTRYLOCK=10000",
+                            "-DSTP_OVERLOAD_THRESHOLD=50000000000",
+                            "--suppress-time-limits"}),
       boost::process::std_out > stap_out);
   this->t_scanner = std::thread(&Session::scan, this, &stap_out);
 }
@@ -138,9 +139,10 @@ void Session::scan(std::istream *in) {
         // TID and PID pair already exist, so add to it
         auto conn = &this->conns.at(this_tid).at(this_pid);
         if (conn->empty() ||
-            conn->back().syscall_list.back().syscall_name == "SyS_shutdown" ||
-            conn->back().syscall_list.back().syscall_name ==
-                "sock_destroy_inode") {
+            conn->back().syscall_list.back().syscall_name.compare(
+                "SyS_shutdown") == 0 ||
+            conn->back().syscall_list.back().syscall_name.compare(
+                "sock_destroy_inode") == 0) {
           this->mq->send(&conn->back(), sizeof(Connection *), 0);
           // Last Connection ended, this is a new Connection, so create a new
           // one and add to syscall_list
