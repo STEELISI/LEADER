@@ -59,8 +59,8 @@ Session::~Session() {
 void Session::scan(std::istream *in) {
   std::string line;
   std::regex csv_match(
-      "((?:[a-z][a-z0-9_]*))(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+"
-      ")(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(.*?)(,)(\\d+)");
+      "((?:[a-zA-Z0-9_]*))(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+"
+      ")(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(.*?)(,)(.*?)");
 
   while (std::getline(*in, line)) {
     std::cout << "line in: " << line << std::endl;
