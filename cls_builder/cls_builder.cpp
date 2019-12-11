@@ -12,6 +12,7 @@ enum CSV {
   fault,
   file,
   cycles,
+  global_time,
   curr_time,
   call_time,
   tid,
@@ -62,8 +63,10 @@ void Session::scan(std::istream *in) {
       ")(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(.*?)(,)(\\d+)");
 
   while (std::getline(*in, line)) {
+    std::cout << "line in: " << line << std::endl;
     // Only match if it is a data line and not extra stuff
     if (std::regex_match(line, csv_match)) {
+      std::cout << "line match" << std::endl;
       // Call to add to a connection
       Call this_call;
       unsigned int this_tid, this_pid, conn_port;

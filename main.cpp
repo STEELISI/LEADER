@@ -25,9 +25,13 @@ int main(int argc, char *argv[]) {
     Connection *conn;
 
     unsigned int priority;
+    boost::interprocess::message_queue::size_type recvd_size;
+
     mq.receive(conn, sizeof(Connection *), recvd_size, priority);
 
     std::cout << "recieved message" << std::endl;
+
+    // If message is readable analyze and output result
     if (conn != nullptr) {
       std::cout << conn->toString() << std::endl;
       std::cout << model.analyze_conn(conn->toString()) << std::endl;
