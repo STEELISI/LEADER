@@ -28,7 +28,7 @@ Session::Session() {
   // Initialize message queue
   boost::interprocess::message_queue::remove("conns");
   mq = new boost::interprocess::message_queue(
-      boost::interprocess::create_only, "conns", 100, sizeof(Connection *));
+      boost::interprocess::create_only, "conns", 100, 4096);
 
   // Start stap process and scanning
   stap_process = boost::process::child(
@@ -146,7 +146,7 @@ void Session::scan(std::istream *in) {
                 "SyS_shutdown") == 0 ||
             conn->back().syscall_list.back().syscall_name.compare(
                 "sock_destroy_inode") == 0) {
-          this->mq->send(&conn->back(), sizeof(Connection *), 0);
+          this->mq->send(conn->back().toString().c_str(), conn->back().toString().length(), 0);
           std::cout << "msg send" << std::endl;
           // Last Connection ended, this is a new Connection, so create a new
           // one and add to syscall_list
