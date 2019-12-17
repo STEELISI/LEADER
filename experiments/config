@@ -1,0 +1,4 @@
+path_to_execute_from=/proj/Leader
+experiment_name=exp
+log_file=/mnt/access.log
+last_attacker_node=8
