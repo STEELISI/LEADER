@@ -1,0 +1,6 @@
+intf=`/sbin/route -n | grep '^10.1' | awk '{print $8}'|head -1`
+sudo /sbin/ip route add 10.1.0.0/16 dev $intf
+sudo /sbin/ip route add 10.2.0.0/16 dev $intf
+sudo /sbin/ip route add 10.3.0.0/16 dev $intf
+sudo /sbin/ip route add 10.4.0.0/16 dev $intf
+sudo /sbin/ip route add 10.5.0.0/16 dev $intf
