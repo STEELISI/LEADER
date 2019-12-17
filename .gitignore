@@ -31,10 +31,12 @@
 *.out
 *.app
 
-# IntelliJ IDEA stuff
+# IDE stuff
 .idea_modules/
 .idea/
 cmake-build-debug/
+build/
+tags
 
 # Testing files
 *.csv

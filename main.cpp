@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
 
   // Read from message queue
   while (true) {
-    char* conn;
+    char conn[4096];
 
     unsigned int priority;
     boost::interprocess::message_queue::size_type recvd_size;
@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
     std::cout << "recieved message" << std::endl;
 
     // If message is readable analyze and output result
-    if (conn != nullptr) {
+    if (conn[0] != 0) {
       std::cout << conn << std::endl;
       std::cout << model.analyze_conn(conn) << std::endl;
     } else
