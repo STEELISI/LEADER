@@ -1,0 +1,63 @@
+#!/usr/bin/perl
+
+$file=$ARGV[0];
+open(IF,"/sbin/ifconfig |") || die "Failed: $!\n";
+# Find a NIC starting with 10.
+$name = "";
+$nic = "";
+$found = 0;
+while ( <IF> )
+{
+    if ($_ =~ /^eth/ ||$_ =~ /^enp/)
+    {
+	my @items = split /\s+/, $_;
+	if (!$found)
+	{
+	    $name = $items[0];
+	}
+	elsif($items[0] =~ /$name\:/)
+	{
+	    system("/sbin/ifconfig $items[0] down");
+	}
+    }
+    if ($_ =~ /inet addr:10\./ && !$found)
+    {
+	$nic = $name;
+	$found = 1;
+    }
+}
+$i=0;
+my $fh=new IO::File($file);
+while(<$fh>)
+{
+    $_ =~ s/\s//g;
+    if ($_ !~ /\d+\.\d+\.\d+\.\d+/)
+    {
+	next;
+    }
+    system("/sbin/ifconfig $name:$i $_ up");
+    $i++;
+}
+
+
+sub dec2dot
+{
+    $addr = shift;
+    $div = 256*256*256;
+    $result="";
+    for ($i=0; $i<4; $i++)
+    {
+	$a=int($addr/$div);
+	$addr = $addr-$a*$div;
+	if ($result eq "")
+	{
+	    $result = $a;
+	}
+	else
+	{
+	    $result = $result . ".$a";
+	}
+	$div = $div/256;
+    }
+    return $result;
+}
