@@ -13,10 +13,10 @@ int main(int argc, char *argv[]) {
   }
 
   // Create ML model from argument
-  Model model(argv[1]);
+  Model* model = new Model(argv[1]);
 
   // Set up session and message queue
-  Session sess;
+  Session sess(model);
   // boost::interprocess::message_queue mq(boost::interprocess::open_only,
   //                                     "conns");
 
