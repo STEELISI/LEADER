@@ -24,11 +24,11 @@ enum CSV {
 /**
  * The constructor spins off a new thread and runs start_stap() on that thread
  */
-Session::Session() {
+Session::Session(Model* m) {
   // Initialize message queue
-  boost::interprocess::message_queue::remove("conns");
-  mq = new boost::interprocess::message_queue(
-      boost::interprocess::create_only, "conns", 100, 4096);
+//  boost::interprocess::message_queue::remove("conns");
+//  mq = new boost::interprocess::message_queue(
+//      boost::interprocess::create_only, "conns", 100, 4096);
 
   // Start stap process and scanning
   stap_process = boost::process::child(
@@ -40,13 +40,14 @@ Session::Session() {
                             "--suppress-time-limits"}),
       boost::process::std_out > stap_out);
   this->t_scanner = std::thread(&Session::scan, this, &stap_out);
+  this->model = m;
 }
 
 /**
  * The destructor joins t_scanner and removes the message queue
  */
 Session::~Session() {
-  boost::interprocess::message_queue::remove("conns");
+  //boost::interprocess::message_queue::remove("conns");
   stap_process.terminate();
   t_scanner.join();
 }
@@ -146,8 +147,9 @@ void Session::scan(std::istream *in) {
                 "SyS_shutdown") == 0 ||
             conn->back().syscall_list.back().syscall_name.compare(
                 "sock_destroy_inode") == 0) {
-          this->mq->send(conn->back().toString().c_str(), conn->back().toString().length(), 0);
-          std::cout << "msg send" << std::endl;
+          //this->mq->send(conn->back().toString().c_str(), conn->back().toString().length(), 0);
+          std::cout << "scoring" << std::endl;
+          
           // Last Connection ended, this is a new Connection, so create a new
           // one and add to syscall_list
           Connection c;

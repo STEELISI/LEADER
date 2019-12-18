@@ -17,11 +17,12 @@ int main(int argc, char *argv[]) {
 
   // Set up session and message queue
   Session sess;
-  boost::interprocess::message_queue mq(boost::interprocess::open_only,
-                                        "conns");
+  // boost::interprocess::message_queue mq(boost::interprocess::open_only,
+  //                                     "conns");
 
   // Read from message queue
   while (true) {
+    /*
     char conn[4096];
 
     unsigned int priority;
@@ -37,6 +38,7 @@ int main(int argc, char *argv[]) {
       std::cout << model.analyze_conn(conn) << std::endl;
     } else
       std::cout << "nullptr conn" << std::endl;
+    */
   }
   return 0;
 }

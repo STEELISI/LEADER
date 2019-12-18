@@ -1,7 +1,7 @@
 #ifndef LEADER_SESSION_H
 #define LEADER_SESSION_H
 
-#include <boost/interprocess/ipc/message_queue.hpp>
+//#include <boost/interprocess/ipc/message_queue.hpp>
 #include <boost/process.hpp>
 #include <cstdio>
 #include <memory>
@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <unordered_map>
 #include <vector>
+#include "../scoring/scorer.h"
 
 /**
  * The Call class stores a single system call and data related to it.
@@ -50,10 +51,11 @@ private:
   boost::process::child stap_process;
 
 public:
-  boost::interprocess::message_queue *mq = nullptr;
+  // boost::interprocess::message_queue *mq = nullptr;
   void scan(std::istream *in);
+  Model* model;
 
-  Session();
+  Session(Model* m);
   ~Session();
 
   std::vector<int> get_connection_ports(const std::string &ip);
