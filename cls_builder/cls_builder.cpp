@@ -149,6 +149,7 @@ void Session::scan(std::istream *in) {
                 "sock_destroy_inode") == 0) {
           //this->mq->send(conn->back().toString().c_str(), conn->back().toString().length(), 0);
           std::cout << "scoring" << std::endl;
+          std::cout << "ip: " << conn->back().ip_addr << " score: " << this->model->analyze_conn(conn->back().toString()) << std::endl;
           
           // Last Connection ended, this is a new Connection, so create a new
           // one and add to syscall_list
