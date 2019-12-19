@@ -60,8 +60,8 @@ Session::~Session() {
 void Session::scan(std::istream *in) {
   std::string line;
   std::regex csv_match(
-      "((?:[a-zA-Z0-9_]*))(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+"
-      ")(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(.*?)(,)(.*?)");
+      "((?:[a-zA-Z0-9_]*))(,)(-?\\d+)(,)(-?\\d+)(,)(-?\\d+)(,)(-?\\d+)(,)(-?\\d+"
+      ")(,)(-?\\d+)(,)(-?\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(.*?)(,)(.*?)");
 
   while (std::getline(*in, line)) {
     std::cout << "line in: " << line << std::endl;
@@ -174,7 +174,7 @@ void Session::scan(std::istream *in) {
       if (has_port) {
         Connection *this_conn = &this->conns.at(this_tid).at(this_pid).back();
         // Only link if connection does not have a port yet
-        if (this_conn->port == 0) {
+        if (this_conn->port == -1) {
           this_conn->port = conn_port;
           this_conn->ip_addr = ip;
         }
