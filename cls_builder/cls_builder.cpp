@@ -3,6 +3,7 @@
 #include <exception>
 #include <iostream>
 #include <regex>
+#include <vector>
 
 // enum for the CSV inputs made by Systemtap
 enum CSV {
@@ -222,12 +223,12 @@ void Session::remove_conn(Connection *c) {}
  * @param ip The IP address to look up
  * @return An empty vector, or a vector of ports used
  */
-std::vector<int> Session::get_connection_ports(const std::string &ip) {
-  std::vector<int> ret;
+tbb::concurrent_vector<int> Session::get_connection_ports(const std::string &ip) {
+  tbb::concurrent_vector<int> ret;
   // Check if client exists in connection list, and then get the list of ports
   // for it
   if (connections.find(ip) != connections.end()) {
-    for (std::pair<int, std::vector<Connection *>> element :
+    for (std::pair<int, tbb::concurrent_vector<Connection *>> element :
          connections.at(ip)) {
       ret.push_back(element.first);
     }
@@ -241,9 +242,9 @@ std::vector<int> Session::get_connection_ports(const std::string &ip) {
  * @param port The port to look up
  * @return A vector of Connections with the given port and IP, or nullptr
  */
-std::vector<Connection> Session::get_connection(const std::string &ip,
+tbb::concurrent_vector<Connection> Session::get_connection(const std::string &ip,
                                                 int port) {
-  std::vector<Connection> ret;
+  tbb::concurrent_vector<Connection> ret;
   // Check if the connection vector exists and add to ret, then remove
   if (connections.find(ip) != connections.end() &&
       connections.at(ip).find(port) != connections.at(ip).end()) {

@@ -23,9 +23,9 @@ int main(int argc, char *argv[]) {
   // Create ML model from argument
   Model model(argv[1]);
 
-  // Set up session and message queue
+  // Set up session and message queues
   Session sess;
-  boost::interprocess::message_queue mq(boost::interprocess::open_only,
+  boost::interprocess::message_queue mq_data(boost::interprocess::open_only,
                                         "conns");
 
   // Set up handler to capture Ctrl-C signals
@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
     unsigned int priority;
     boost::interprocess::message_queue::size_type recvd_size;
 
-    mq.receive(conn, 4096, recvd_size, priority);
+    mq_data.receive(conn, 4096, recvd_size, priority);
 
     std::cout << "recieved message" << std::endl;
 

@@ -8,8 +8,8 @@
 #include <string>
 #include <thread>
 #include <unistd.h>
-#include <unordered_map>
-#include <vector>
+#include "tbb/concurrent_unordered_map.h"
+#include "tbb/concurrent_vector.h"
 
 /**
  * The Call class stores a single system call and data related to it.
@@ -41,10 +41,10 @@ class Session {
 private:
   std::thread t_scanner;
 
-  std::unordered_map<std::string,
-                     std::unordered_map<int, std::vector<Connection *>>>
+  tbb::concurrent_unordered_map<std::string,
+                     tbb::concurrent_unordered_map<int, tbb::concurrent_vector<Connection *>>>
       connections;
-  std::unordered_map<int, std::unordered_map<int, std::vector<Connection>>>
+  tbb::concurrent_unordered_map<int, tbb::concurrent_unordered_map<int, tbb::concurrent_vector<Connection>>>
       conns;
   boost::process::ipstream stap_out;
   boost::process::child stap_process;
@@ -56,8 +56,8 @@ public:
   Session();
   ~Session();
 
-  std::vector<int> get_connection_ports(const std::string &ip);
-  std::vector<Connection> get_connection(const std::string &ip, int port);
+  tbb::concurrent_vector<int> get_connection_ports(const std::string &ip);
+  tbb::concurrent_vector<Connection> get_connection(const std::string &ip, int port);
   int get_size();
   void remove_conn(Connection *c);
 };
