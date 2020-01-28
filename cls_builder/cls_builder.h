@@ -8,7 +8,8 @@
 #include <string>
 #include <thread>
 #include <unistd.h>
-#include "tbb/concurrent_unordered_map.h"
+#include <vector>
+#include "tbb/concurrent_hash_map.h"
 #include "tbb/concurrent_vector.h"
 
 /**
@@ -16,17 +17,17 @@
  */
 struct Call {
   std::string syscall_name;
-  int page_faults;
-  int descriptors;
-  int mem_alloc;
+  unsigned int page_faults;
+  unsigned int descriptors;
+  unsigned int mem_alloc;
 };
 
 /**
  * The Connection class stores system calls related to a single connection.
  */
 struct Connection {
-  std::vector<Call> syscall_list;
-  int port = -1, tid = -1, pid = -1;
+  tbb::concurrent_vector<Call> syscall_list;
+  unsigned int port = -1, tid = -1, pid = -1;
   std::string ip_addr;
   Connection() = default;
   std::string toString();
@@ -41,11 +42,8 @@ class Session {
 private:
   std::thread t_scanner;
 
-  tbb::concurrent_unordered_map<std::string,
-                     tbb::concurrent_unordered_map<int, tbb::concurrent_vector<Connection *>>>
-      connections;
-  tbb::concurrent_unordered_map<int, tbb::concurrent_unordered_map<int, tbb::concurrent_vector<Connection>>>
-      conns;
+  // We change this to a single map of connections since we're tracking in real time
+  tbb::concurrent_hash_map<unsigned int, tbb::concurrent_hash_map<unsigned int, Connection>> conns;
   boost::process::ipstream stap_out;
   boost::process::child stap_process;
 
@@ -55,11 +53,6 @@ public:
 
   Session();
   ~Session();
-
-  tbb::concurrent_vector<int> get_connection_ports(const std::string &ip);
-  tbb::concurrent_vector<Connection> get_connection(const std::string &ip, int port);
-  int get_size();
-  void remove_conn(Connection *c);
 };
 
 #endif

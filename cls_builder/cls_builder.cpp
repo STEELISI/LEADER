@@ -110,24 +110,26 @@ void Session::scan(std::istream *in) {
       }
       std::cout << "stap call - tid: " << this_tid << std::endl;
 
+      // Get accessors for hash maps
+      tbb::concurrent_hash_map<unsigned int, Connection>::accessor ac_1;
+      tbb::concurrent_hash_map<unsigned int, tbb::concurrent_unordered_map<unsigned int, Connection>>::accessor ac_2;
+
       // Add Call object into correct location in Session
-      if (this->conns.find(this_tid) == this->conns.end()) {
+      if (this->conns.find(ac_2, this_tid)) {
         // PID and TID pair does not exist, so create both and add to conns
         Connection c;
         c.pid = pid;
         c.tid = tid;
         c.syscall_list.push_back(this_call);
 
-        std::vector<Connection> vec;
-        vec.push_back(c);
+        tbb::concurrent_hash_map<unsigned int, Connection> pid_map;
+        pid_map.insert(ac_1, this_pid);
+        ac_1->second = c;
 
-        std::unordered_map<int, std::vector<Connection>> pid_map;
-        pid_map.emplace(this_pid, vec);
+        this->conns.insert(ac_2, this_tid);
+        ac_2->second = pid_map;
 
-        this->conns.emplace(this_tid, pid_map);
-      } else if (this->conns.find(this_tid) != this->conns.end() &&
-                 this->conns.at(this_tid).find(this_pid) ==
-                     this->conns.at(this_tid).end()) {
+      } else if (this->conns.find(ac_2, this_tid) && !this->conns.find(this_tid)->find(this_pid)) {
         // TID exists but PID does not, so create PID
         Connection c;
         c.pid = pid;
@@ -172,100 +174,10 @@ void Session::scan(std::istream *in) {
           this_conn->port = conn_port;
           this_conn->ip_addr = ip;
         }
-
-        // Add port to connections map
-        if (this->connections.find(ip) == this->connections.end()) {
-          // Connections has neither IP and port, add IP and port to list
-          std::vector<Connection *> vec;
-          vec.push_back(this_conn);
-
-          std::unordered_map<int, std::vector<Connection *>> map;
-          map.emplace(conn_port, vec);
-
-          this->connections.emplace(ip, map);
-        } else if (this->connections.find(ip) != this->connections.end() &&
-                   this->connections.at(ip).find(conn_port) ==
-                       this->connections.at(ip).end()) {
-          // Connections has IP but not port, and port to list
-          std::vector<Connection *> vec;
-          vec.push_back(this_conn);
-
-          this->connections.at(ip).emplace(port, vec);
-        } else {
-          // Connections already has both IP and port, just append
-          this->connections.at(ip).at(conn_port).push_back(this_conn);
-        }
       }
     }
   }
 }
-
-/**
- * This function returns the total number of connections in progress or
- * unreported in the session.
- */
-int Session::get_size() {
-  int ret = 0;
-  for (const auto &i : this->conns)
-    for (auto it : i.second)
-      ret++;
-  return ret;
-}
-
-/**
- * This function removes a connection given a pointer for it
- * @param c The connection to remove
- */
-void Session::remove_conn(Connection *c) {}
-
-/**
- * This function gets the ports of all connections for a given IP in a session.
- * @param ip The IP address to look up
- * @return An empty vector, or a vector of ports used
- */
-tbb::concurrent_vector<int> Session::get_connection_ports(const std::string &ip) {
-  tbb::concurrent_vector<int> ret;
-  // Check if client exists in connection list, and then get the list of ports
-  // for it
-  if (connections.find(ip) != connections.end()) {
-    for (std::pair<int, tbb::concurrent_vector<Connection *>> element :
-         connections.at(ip)) {
-      ret.push_back(element.first);
-    }
-  }
-  return ret;
-};
-
-/*!
- * This function returns a vector of connections given an IP and port number.
- * @param ip The IP address to look up
- * @param port The port to look up
- * @return A vector of Connections with the given port and IP, or nullptr
- */
-tbb::concurrent_vector<Connection> Session::get_connection(const std::string &ip,
-                                                int port) {
-  tbb::concurrent_vector<Connection> ret;
-  // Check if the connection vector exists and add to ret, then remove
-  if (connections.find(ip) != connections.end() &&
-      connections.at(ip).find(port) != connections.at(ip).end()) {
-    for (auto i : connections.at(ip).at(port)) {
-      ret.push_back(*i);
-
-      // remove connection from conns vector
-      std::vector<Connection> *conn_vec = &conns.at(i->tid).at(i->pid);
-      for (auto it = conn_vec->begin(); it != conn_vec->end(); it++)
-        if (i == &*it)
-          conn_vec->erase(it);
-
-      // remove connection from connections vector
-      for (auto it = connections.at(ip).at(port).begin();
-           it != connections.at(ip).at(port).end(); it++)
-        if (&i == &*it)
-          connections.at(ip).at(port).erase(it);
-    }
-  }
-  return ret;
-};
 
 /*!
  * This function returns a string for each connection readable by the ML
