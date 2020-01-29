@@ -110,65 +110,54 @@ void Session::scan(std::istream *in) {
       }
       std::cout << "stap call - tid: " << this_tid << std::endl;
 
-      // Get accessors for hash maps
-      tbb::concurrent_hash_map<unsigned int, Connection>::accessor ac_1;
-      tbb::concurrent_hash_map<unsigned int, tbb::concurrent_unordered_map<unsigned int, Connection>>::accessor ac_2;
-
       // Add Call object into correct location in Session
-      if (this->conns.find(ac_2, this_tid)) {
+      if (this->conns.find(this_tid) != this->conns.end()) {
         // PID and TID pair does not exist, so create both and add to conns
         Connection c;
         c.pid = pid;
         c.tid = tid;
         c.syscall_list.push_back(this_call);
 
-        tbb::concurrent_hash_map<unsigned int, Connection> pid_map;
-        pid_map.insert(ac_1, this_pid);
-        ac_1->second = c;
+        tbb::concurrent_unordered_map<unsigned int, Connection> pid_map;
+        pid_map.insert(std::pair<unsigned int, Connection>(this_pid, c));
 
-        this->conns.insert(ac_2, this_tid);
-        ac_2->second = pid_map;
+        this->conns.insert(std::pair<unsigned int, tbb::concurrent_unordered_map<unsigned int, Connection>>(this_tid, pid_map));
 
-      } else if (this->conns.find(ac_2, this_tid) && !this->conns.find(this_tid)->find(this_pid)) {
+      } else if (this->conns.find(this_tid) != this->conns.end() &&
+                 this->conns.find(this_tid)->second.find(this_pid) != this->conns.find(this_tid)->second.end()) {
         // TID exists but PID does not, so create PID
         Connection c;
         c.pid = pid;
         c.tid = tid;
         c.syscall_list.push_back(this_call);
 
-        std::vector<Connection> vec;
-        vec.push_back(c);
-
         auto pid_map = this->conns.at(this_tid);
-        pid_map.emplace(this_pid, vec);
+        pid_map.emplace(this_pid, c);
       } else {
         // TID and PID pair already exist, so add to it
         auto conn = &this->conns.at(this_tid).at(this_pid);
-        if (conn->empty() ||
-            conn->back().syscall_list.back().syscall_name.compare(
-                "SyS_shutdown") == 0 ||
-            conn->back().syscall_list.back().syscall_name.compare(
-                "sock_destroy_inode") == 0) {
-          this->mq->send(conn->back().toString().c_str(), conn->back().toString().length(), 0);
-          std::cout << "msg send" << std::endl;
-          // Last Connection ended, this is a new Connection, so create a new
-          // one and add to syscall_list
-          Connection c;
-          c.pid = pid;
-          c.tid = tid;
-          c.syscall_list.push_back(this_call);
-          conn->push_back(c);
+
+        // Previous connection was closed
+        if (conn->syscall_list.back().syscall_name == "SyS_shutdown" ||
+            conn->syscall_list.back().syscall_name == "sock_destroy_inode") {
+          // Last Connection ended, this is a new Connection, so create a new one...
+          Connection* c = new Connection();
+          c->pid = pid;
+          c->tid = tid;
+          c->syscall_list.push_back(this_call);
+          // ... and then replace the old connection
+          delete conn;
+          conn = c;
         } else {
-          // Connection still ongoing, so just add to last Connection in
-          // syscall_list
-          conn->back().syscall_list.push_back(this_call);
+          // Connection still ongoing, so just add to last Connection in syscall_list
+          conn->syscall_list.push_back(this_call);
         }
       }
 
       // Link Connection to IP address and Port
       // TODO: only if IP is 10.10.1.*
       if (has_port) {
-        Connection *this_conn = &this->conns.at(this_tid).at(this_pid).back();
+        Connection *this_conn = &this->conns.at(this_tid).at(this_pid);
         // Only link if connection does not have a port yet
         if (this_conn->port == 0) {
           this_conn->port = conn_port;

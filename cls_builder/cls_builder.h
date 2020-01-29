@@ -9,7 +9,7 @@
 #include <thread>
 #include <unistd.h>
 #include <vector>
-#include "tbb/concurrent_hash_map.h"
+#include "tbb/concurrent_unordered_map.h"
 #include "tbb/concurrent_vector.h"
 
 /**
@@ -31,6 +31,7 @@ struct Connection {
   std::string ip_addr;
   Connection() = default;
   std::string toString();
+
 };
 
 /**
@@ -43,7 +44,7 @@ private:
   std::thread t_scanner;
 
   // We change this to a single map of connections since we're tracking in real time
-  tbb::concurrent_hash_map<unsigned int, tbb::concurrent_hash_map<unsigned int, Connection>> conns;
+  tbb::concurrent_unordered_map<unsigned int, tbb::concurrent_unordered_map<unsigned int, Connection>> conns;
   boost::process::ipstream stap_out;
   boost::process::child stap_process;
 
