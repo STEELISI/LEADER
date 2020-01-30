@@ -3,9 +3,9 @@
 #include <exception>
 #include <iostream>
 #include <regex>
-#include <vector>
+#include <utility>
 
-// enum for the CSV inputs made by Systemtap
+// enum for the CSV inputs made by SystemTap
 enum CSV {
   func,
   req,
@@ -69,10 +69,9 @@ void Session::scan(std::istream *in) {
     if (std::regex_match(line, csv_match)) {
       std::cout << "line match" << std::endl;
       // Call to add to a connection
-      Call this_call;
-      unsigned int this_tid, this_pid, conn_port;
+      unsigned int this_tid = -1, this_pid = -1, conn_port = -1;
       bool has_port = false;
-      std::string ip;
+      std::string ip, call;
 
       // Turn the CSV into a boost::tokenizer for easy parsing
       unsigned int count = 0;
@@ -80,20 +79,9 @@ void Session::scan(std::istream *in) {
           line, boost::escaped_list_separator<char>('\\', ',', '\"'));
 
       // Add each element of the line into a Call object
-      for (boost::tokenizer<boost::escaped_list_separator<char>>::iterator i(
-               tk.begin());
-           i != tk.end(); ++i) {
-
+      for (boost::tokenizer<boost::escaped_list_separator<char>>::iterator i(tk.begin()); i != tk.end(); ++i) {
         if (count == func)
-          this_call.syscall_name = *i;
-        else if (count == mem)
-          this_call.mem_alloc = std::stoi(*i);
-        else if (count == file)
-          this_call.descriptors = std::stoi(*i);
-        else if (count == fault)
-          this_call.page_faults = std::stoi(*i);
-        else if (count == mem)
-          this_call.mem_alloc = std::stoi(*i);
+          call = *i;
         else if (count == tid)
           this_tid = std::stoi(*i);
         else if (count == pid)
@@ -108,50 +96,19 @@ void Session::scan(std::istream *in) {
 
         count++;
       }
+
       std::cout << "stap call - tid: " << this_tid << std::endl;
 
       // Add Call object into correct location in Session
-      if (this->conns.find(this_tid) != this->conns.end()) {
+      if (this->conns.find(this_tid) == this->conns.end()) {
         // PID and TID pair does not exist, so create both and add to conns
-        Connection c;
-        c.pid = pid;
-        c.tid = tid;
-        c.syscall_list.push_back(this_call);
 
-        tbb::concurrent_unordered_map<unsigned int, Connection> pid_map;
-        pid_map.insert(std::pair<unsigned int, Connection>(this_pid, c));
-
-        this->conns.insert(std::pair<unsigned int, tbb::concurrent_unordered_map<unsigned int, Connection>>(this_tid, pid_map));
-
-      } else if (this->conns.find(this_tid) != this->conns.end() &&
-                 this->conns.find(this_tid)->second.find(this_pid) != this->conns.find(this_tid)->second.end()) {
+      } else if (this->conns.find(this_tid)->second.find(this_pid) != this->conns.find(this_tid)->second.end()) {
         // TID exists but PID does not, so create PID
-        Connection c;
-        c.pid = pid;
-        c.tid = tid;
-        c.syscall_list.push_back(this_call);
 
-        auto pid_map = this->conns.at(this_tid);
-        pid_map.emplace(this_pid, c);
       } else {
-        // TID and PID pair already exist, so add to it
-        auto conn = &this->conns.at(this_tid).at(this_pid);
-
-        // Previous connection was closed
-        if (conn->syscall_list.back().syscall_name == "SyS_shutdown" ||
-            conn->syscall_list.back().syscall_name == "sock_destroy_inode") {
-          // Last Connection ended, this is a new Connection, so create a new one...
-          Connection* c = new Connection();
-          c->pid = pid;
-          c->tid = tid;
-          c->syscall_list.push_back(this_call);
-          // ... and then replace the old connection
-          delete conn;
-          conn = c;
-        } else {
-          // Connection still ongoing, so just add to last Connection in syscall_list
-          conn->syscall_list.push_back(this_call);
-        }
+        // TID and PID pair already exist, so add this syscall to it
+        this->conns[this_tid][this_pid].syscall_list.push_back(call);
       }
 
       // Link Connection to IP address and Port
@@ -168,7 +125,14 @@ void Session::scan(std::istream *in) {
   }
 }
 
-/*!
+/**
+ * This function runs in a separate thread and checks each connection every second
+ */
+void Session::analyze() {
+
+}
+
+/**
  * This function returns a string for each connection readable by the ML
  * module
  * @return A string that the consumer can parse
@@ -179,25 +143,20 @@ std::string Connection::toString() {
   // Add each syscall function into the functions object if it doesn't exist, or
   // add one to the count
   for (auto &it : this->syscall_list) {
-    auto l = functions.find(it.syscall_name);
+    auto l = functions.find(it);
     if (l == functions.end())
-      functions.emplace(it.syscall_name, 1);
+      functions.emplace(it, 1);
     else
       l->second += 1;
   }
 
-  const std::vector<std::string> vect = {
-      "sock_poll",         "sock_write_iter",    "sockfd_lookup_light",
-      "sock_alloc_inode",  "sock_alloc",         "sock_alloc_file",
-      "move_addr_to_user", "SYSC_getsockname",   "SyS_getsockname",
-      "SYSC_accept4",      "sock_destroy_inode", "sock_read_iter",
-      "sock_recvmsg",      "sock_sendmsg",       "__sock_release",
-      "SyS_accept4",       "SyS_shutdown",       "sock_close"};
-  for (const auto &entry : vect) {
+  // For each entry we care about, add into the string CSV
+  for (const auto &entry : this->vect) {
     if (functions.find(entry) != functions.end())
-      ret += std::to_string(functions[entry]) + ",";
+      ret += std::to_string(functions.find(entry)->second) + ",";
     else
       ret.append("0,");
   }
   return ret.substr(0, ret.size() - 1);
 }
+
