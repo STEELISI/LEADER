@@ -1,4 +1,5 @@
 #include "cls_builder.h"
+#include <algorithm>
 #include <boost/tokenizer.hpp>
 #include <exception>
 #include <iostream>
@@ -30,6 +31,26 @@ Session::Session() {
   boost::interprocess::message_queue::remove("conns");
   mq = new boost::interprocess::message_queue(
       boost::interprocess::create_only, "conns", 100, 4096);
+
+  // Set up useful_calls with syscalls we wanna record
+  useful_calls.insert("sock_poll");
+  useful_calls.insert("sock_write_iter");
+  useful_calls.insert("sockfd_lookup_light");
+  useful_calls.insert("sock_alloc_inode");
+  useful_calls.insert("sock_alloc");
+  useful_calls.insert("sock_alloc_file");
+  useful_calls.insert("move_addr_to_user");
+  useful_calls.insert("SYSC_getsockname");
+  useful_calls.insert("SyS_getsockname");
+  useful_calls.insert("SYSC_accept4");
+  useful_calls.insert("sock_destroy_inode");
+  useful_calls.insert("sock_read_iter");
+  useful_calls.insert("sock_recvmsg");
+  useful_calls.insert("sock_sendmsg");
+  useful_calls.insert("__sock_release");
+  useful_calls.insert("SyS_accept4");
+  useful_calls.insert("SyS_shutdown");
+  useful_calls.insert("sock_close");
 
   // Start stap process and scanning
   stap_process = boost::process::child(
@@ -69,7 +90,7 @@ void Session::scan(std::istream *in) {
     if (std::regex_match(line, csv_match)) {
       std::cout << "line match" << std::endl;
       // Call to add to a connection
-      unsigned int this_tid = -1, this_pid = -1, conn_port = -1;
+      unsigned int this_pid = -1, conn_port = -1, this_tid = -1;
       bool has_port = false;
       std::string ip, call;
 
@@ -78,8 +99,9 @@ void Session::scan(std::istream *in) {
       boost::tokenizer<boost::escaped_list_separator<char>> tk(
           line, boost::escaped_list_separator<char>('\\', ',', '\"'));
 
-      // Add each element of the line into a Call object
-      for (boost::tokenizer<boost::escaped_list_separator<char>>::iterator i(tk.begin()); i != tk.end(); ++i) {
+      // Turn the line info into actual data
+      for (boost::tokenizer<boost::escaped_list_separator<char>>::iterator i(tk.begin());
+           i != tk.end(); ++i) {
         if (count == func)
           call = *i;
         else if (count == tid)
@@ -93,28 +115,81 @@ void Session::scan(std::istream *in) {
           conn_port = std::stoi(*i);
           has_port = true;
         }
-
         count++;
       }
 
       std::cout << "stap call - tid: " << this_tid << std::endl;
 
       // Add Call object into correct location in Session
-      if (this->conns.find(this_tid) == this->conns.end()) {
+      tbb::concurrent_hash_map<std::string, unsigned int>::accessor a;
+      tbb::concurrent_hash_map<unsigned int,
+                               tbb::concurrent_hash_map<unsigned int, Connection>>::accessor conns_ac;
+      if (!this->conns.find(conns_ac, this_pid)) {
         // PID and TID pair does not exist, so create both and add to conns
+        Connection c;
 
-      } else if (this->conns.find(this_tid)->second.find(this_pid) != this->conns.find(this_tid)->second.end()) {
-        // TID exists but PID does not, so create PID
+        // Only increment call if we deem it useful
+        if (useful_calls.find(call) != useful_calls.end()) {
+          c.syscall_list.insert(a, call);
+          a->second += 1;
+        }
 
+        // Create tid entry
+        tbb::concurrent_hash_map<unsigned int, Connection> temp;
+        tbb::concurrent_hash_map<unsigned int, Connection>::accessor temp_ac;
+        temp.insert(temp_ac, this_tid);
+        temp_ac->second = c;
+
+        // Put into PID entry
+        conns.insert(conns_ac, this_pid);
+        conns_ac->second = temp;
       } else {
-        // TID and PID pair already exist, so add this syscall to it
-        this->conns[this_tid][this_pid].syscall_list.push_back(call);
+        tbb::concurrent_hash_map<unsigned int, Connection>::accessor temp_ac;
+        // PID does exist, check if TID does
+        auto pid_map = conns_ac->second;
+        if(pid_map.find(temp_ac, this_tid)) {
+          // TID exists too, add to existing connection
+          // Only increment call if we deem it useful and not ending call
+          if (useful_calls.find(call) != useful_calls.end()) {
+            temp_ac->second.syscall_list.insert(a, call);
+            a->second += 1;
+          }
+        } else {
+          // TID doesn't exist, create connection and add to pid_map
+          Connection c;
+
+          // Only increment call if we deem it useful
+          if (useful_calls.find(call) != useful_calls.end()) {
+            c.syscall_list.insert(a, call);
+            a->second += 1;
+          }
+
+          pid_map.insert(temp_ac, this_tid);
+          temp_ac->second = c;
+        }
+        else {
+          // TID doesn't exist, add to map as new Connection
+          Connection c;
+
+          tbb::concurrent_hash_map<unsigned int, Connection> temp;
+          tbb::concurrent_hash_map<unsigned int, Connection>::accessor temp_cont_ac;
+          temp.insert(temp_cont_ac, this_tid);
+          temp_cont_ac->second = c;
+
+          // Put into PID entry
+          conns.insert(conns_ac, this_pid);
+          conns_ac->second = temp;
+        }
       }
 
       // Link Connection to IP address and Port
       // TODO: only if IP is 10.10.1.*
       if (has_port) {
-        Connection *this_conn = &this->conns.at(this_tid).at(this_pid);
+        // Find the connection in the big hash map
+        tbb::concurrent_hash_map<unsigned int, Connection>::accessor temp_ac;
+        this->conns.find(conns_ac, this_pid);
+        conns_ac->second.find(temp_ac, this_tid);
+        Connection *this_conn = &temp_ac->second;
         // Only link if connection does not have a port yet
         if (this_conn->port == 0) {
           this_conn->port = conn_port;
@@ -124,39 +199,3 @@ void Session::scan(std::istream *in) {
     }
   }
 }
-
-/**
- * This function runs in a separate thread and checks each connection every second
- */
-void Session::analyze() {
-
-}
-
-/**
- * This function returns a string for each connection readable by the ML
- * module
- * @return A string that the consumer can parse
- */
-std::string Connection::toString() {
-  std::string ret;
-  std::unordered_map<std::string, int> functions;
-  // Add each syscall function into the functions object if it doesn't exist, or
-  // add one to the count
-  for (auto &it : this->syscall_list) {
-    auto l = functions.find(it);
-    if (l == functions.end())
-      functions.emplace(it, 1);
-    else
-      l->second += 1;
-  }
-
-  // For each entry we care about, add into the string CSV
-  for (const auto &entry : this->vect) {
-    if (functions.find(entry) != functions.end())
-      ret += std::to_string(functions.find(entry)->second) + ",";
-    else
-      ret.append("0,");
-  }
-  return ret.substr(0, ret.size() - 1);
-}
-
