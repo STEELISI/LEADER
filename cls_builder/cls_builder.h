@@ -15,16 +15,14 @@
 /**
  * The Connection class stores system calls related to a single connection.
  */
-class Connection {
-private:
+struct Connection {
   bool tested = false;
-
-public:
   tbb::concurrent_hash_map<std::string, unsigned int> syscall_list;
   unsigned int port = -1, tid = -1, pid = -1;
   std::string ip_addr;
 
   Connection() = default;
+  std::string toString();
 };
 
 /**
@@ -35,8 +33,10 @@ public:
 class Session {
 private:
   std::set<std::string> useful_calls;
-  std::thread t_scanner;
+
   boost::interprocess::message_queue *mq = nullptr;
+  std::thread t_scanner;
+  std::thread msg_push;
 
   // We change this to a single map of connections since we're tracking in real time
   tbb::concurrent_hash_map<unsigned int, tbb::concurrent_hash_map<unsigned int, Connection>> conns;
@@ -44,6 +44,7 @@ private:
   boost::process::child stap_process;
 
   void scan(std::istream *in);
+  void push();
 public:
   Session();
   ~Session();

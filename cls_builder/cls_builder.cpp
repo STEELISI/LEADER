@@ -1,10 +1,9 @@
 #include "cls_builder.h"
-#include <algorithm>
 #include <boost/tokenizer.hpp>
+#include <chrono>
 #include <exception>
 #include <iostream>
 #include <regex>
-#include <utility>
 
 // enum for the CSV inputs made by SystemTap
 enum CSV {
@@ -52,7 +51,7 @@ Session::Session() {
   useful_calls.insert("SyS_shutdown");
   useful_calls.insert("sock_close");
 
-  // Start stap process and scanning
+  // Start stap process
   stap_process = boost::process::child(
       "/usr/local/bin/stap",
       boost::process::args({"-g", "./cls_builder/conn.stp",
@@ -61,7 +60,10 @@ Session::Session() {
                             "-DSTP_OVERLOAD_THRESHOLD=50000000000",
                             "--suppress-time-limits"}),
       boost::process::std_out > stap_out);
+
+  // Start scanner and message pusher
   this->t_scanner = std::thread(&Session::scan, this, &stap_out);
+  this->msg_push = std::thread(&Session::push, this);
 }
 
 /**
@@ -151,6 +153,7 @@ void Session::scan(std::istream *in) {
           // TID exists too, add to existing connection
           // Only increment call if we deem it useful and not ending call
           if (useful_calls.find(call) != useful_calls.end()) {
+            temp_ac->second.tested = false;
             temp_ac->second.syscall_list.insert(a, call);
             a->second += 1;
           }
@@ -166,19 +169,6 @@ void Session::scan(std::istream *in) {
 
           pid_map.insert(temp_ac, this_tid);
           temp_ac->second = c;
-        }
-        else {
-          // TID doesn't exist, add to map as new Connection
-          Connection c;
-
-          tbb::concurrent_hash_map<unsigned int, Connection> temp;
-          tbb::concurrent_hash_map<unsigned int, Connection>::accessor temp_cont_ac;
-          temp.insert(temp_cont_ac, this_tid);
-          temp_cont_ac->second = c;
-
-          // Put into PID entry
-          conns.insert(conns_ac, this_pid);
-          conns_ac->second = temp;
         }
       }
 
@@ -198,4 +188,62 @@ void Session::scan(std::istream *in) {
       }
     }
   }
+}
+
+/**
+ * This function pushes all current connections through the msgqueue every second
+ */
+void Session::push() {
+  // run forever
+  while(true) {
+    // loop through each connection
+    for(auto iter = this->conns.begin(); iter != this->conns.end(); ++iter) {
+      for(auto it = iter->second.begin(); it != iter->second.end(); ++it) {
+        // Make sure connection is not tested if testing
+        if(!it->second.tested) {
+          it->second.tested = true;
+          mq->send(it->second.toString().c_str(), it->second.toString().length(), 0);
+        }
+      }
+    }
+
+    // sleep one second after computation
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+  }
+}
+
+/*!
+ * This function returns a string for each connection readable by the ML
+ * module
+ * @return A string that the consumer can parse
+ */
+std::string Connection::toString() {
+  std::string ret;
+  std::unordered_map<std::string, int> functions;
+  // Add each syscall function into the functions object if it doesn't exist, or add one to count
+  for (auto it = this->syscall_list.begin(); it != this->syscall_list.end(); ++it) {
+    auto l = functions.find(it->first);
+    if (l == functions.end())
+      functions.emplace(it->first, 1);
+    else
+      l->second += 1;
+  }
+
+  // Order the vects correctly
+  const std::vector<std::string> vect = {
+      "sock_poll",         "sock_write_iter",    "sockfd_lookup_light",
+      "sock_alloc_inode",  "sock_alloc",         "sock_alloc_file",
+      "move_addr_to_user", "SYSC_getsockname",   "SyS_getsockname",
+      "SYSC_accept4",      "sock_destroy_inode", "sock_read_iter",
+      "sock_recvmsg",      "sock_sendmsg",       "__sock_release",
+      "SyS_accept4",       "SyS_shutdown",       "sock_close"};
+  for (const auto &entry : vect) {
+    if (functions.find(entry) != functions.end())
+      ret += std::to_string(functions[entry]) + ",";
+    else
+      ret.append("0,");
+  }
+
+  // Take out the last `,` character
+  return ret.substr(0, ret.size() - 1);
 }
