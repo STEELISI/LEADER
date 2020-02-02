@@ -91,6 +91,7 @@ void Session::scan(std::istream *in) {
     // Only match if it is a data line and not extra stuff
     if (std::regex_match(line, csv_match)) {
       std::cout << "line match" << std::endl;
+
       // Call to add to a connection
       unsigned int this_pid = -1, conn_port = -1, this_tid = -1;
       bool has_port = false;
@@ -180,11 +181,10 @@ void Session::scan(std::istream *in) {
         tbb::concurrent_hash_map<unsigned int, Connection>::accessor temp_ac;
         this->conns.find(conns_ac, this_pid);
         conns_ac->second.find(temp_ac, this_tid);
-        Connection *this_conn = &temp_ac->second;
         // Only link if connection does not have a port yet
-        if (this_conn->port == 0) {
-          this_conn->port = conn_port;
-          this_conn->ip_addr = ip;
+        if (temp_ac->second.port == 0) {
+          temp_ac->second.port = conn_port;
+          temp_ac->second.ip_addr = ip;
         }
       }
     }
