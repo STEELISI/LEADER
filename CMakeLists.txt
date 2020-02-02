@@ -4,7 +4,7 @@ project(leader)
 find_package(Boost 1.65 REQUIRED system thread)
 find_package(Python3 COMPONENTS Interpreter Development)
 find_package(Threads REQUIRED)
-find_package(TBB COMPONENTS tbbmalloc tbbmalloc_proxy tbb_preview)
+find_package(TBB COMPONENTS tbbmalloc tbbmalloc_proxy)
 
 include_directories(/usr/lib/ ${Boost_INCLUDE_DIR} ${Python3_INCLUDE_DIR})
 

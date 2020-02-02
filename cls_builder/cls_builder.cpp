@@ -121,6 +121,7 @@ void Session::scan(std::istream *in) {
       }
 
       std::cout << "stap call - tid: " << this_tid << std::endl;
+      std::cout << "            pid: " << this_pid << std::endl << std::endl;
 
       // Add Call object into correct location in Session
       tbb::concurrent_hash_map<std::string, unsigned int>::accessor a;
@@ -177,8 +178,8 @@ void Session::scan(std::istream *in) {
       if (has_port) {
         // Find the connection in the big hash map
         tbb::concurrent_hash_map<unsigned int, Connection>::accessor temp_ac;
-        this->conns.find(conns_ac, this_pid);
-        conns_ac->second.find(temp_ac, this_tid);
+        this->conns.find(conns_ac, this_tid);
+        conns_ac->second.find(temp_ac, this_pid);
         Connection *this_conn = &temp_ac->second;
         // Only link if connection does not have a port yet
         if (this_conn->port == 0) {
