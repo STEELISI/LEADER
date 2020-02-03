@@ -14,8 +14,8 @@ int Model::analyze_conn(const std::string &in) {
   PyObject *ret = PyObject_CallObject(test_func, conn);
   int r = PyNumber_Check(ret);
 
-  Py_DECREF (conn);
-  Py_DECREF (ret);
+  Py_XDECREF(conn);
+  Py_XDECREF(ret);
   return r;
 }
 
@@ -23,9 +23,9 @@ int Model::analyze_conn(const std::string &in) {
  * Destructor that deletes unneeded stuff
  */
 Model::~Model() {
-  Py_DECREF (load_func);
-  Py_DECREF (test_func);
-  Py_DECREF (ml_model);
+  Py_XDECREF (load_func);
+  Py_XDECREF (test_func);
+  Py_XDECREF (ml_model);
 }
 
 /**
