@@ -6,6 +6,7 @@
  * @return chance of attack from 0 to 1
  */
 int Model::analyze_conn(const std::string &in) {
+  Py_XINCREF(ml_model);
 
   PyObject *conn = PyTuple_New(2);
   PyTuple_SetItem(conn, 0, PyBytes_FromString(in.c_str()));
@@ -23,9 +24,9 @@ int Model::analyze_conn(const std::string &in) {
  * Destructor that deletes unneeded stuff
  */
 Model::~Model() {
-  Py_XDECREF (load_func);
-  Py_XDECREF (test_func);
-  Py_XDECREF (ml_model);
+  Py_XDECREF(load_func);
+  Py_XDECREF(test_func);
+  Py_XDECREF(ml_model);
 }
 
 /**
@@ -46,6 +47,6 @@ Model::Model(const std::string &load) {
   PyTuple_SetItem(str, 0, Py_BuildValue("y#", load.c_str(), load.size()));
   ml_model = PyObject_CallObject(load_func, str);
 
-  Py_DECREF (str);
-  Py_DECREF (module);
+  Py_XDECREF(str);
+  Py_XINCREF(ml_model);
 }
