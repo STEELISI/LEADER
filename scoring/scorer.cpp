@@ -13,7 +13,7 @@ int Model::analyze_conn(const std::string &in) {
   PyTuple_SetItem(conn, 1, ml_model);
 
   PyObject *ret = PyObject_CallObject(test_func, conn);
-  int r = static_cast<int>PyLong_AsLong(ret);
+  int r = static_cast<int>(PyLong_AsLong(ret));
 
   Py_XDECREF(conn);
   Py_XDECREF(ret);

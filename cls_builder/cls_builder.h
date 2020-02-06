@@ -19,6 +19,7 @@ struct Call {
   int page_faults;
   int descriptors;
   int mem_alloc;
+  int call_time;
 };
 
 /**

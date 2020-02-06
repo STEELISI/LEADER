@@ -97,6 +97,8 @@ void Session::scan(std::istream *in) {
           this_tid = std::stoi(*i);
         else if (count == pid)
           this_pid = std::stoi(*i);
+        else if (count == call_time)
+          this_call.call_time = std::stoi(*i);
         else if (count == addr && *i != "-1") {
           ip = *i;
           has_port = true;
@@ -272,8 +274,9 @@ std::vector<Connection> Session::get_connection(const std::string &ip,
  * @return A string that the consumer can parse
  */
 std::string Connection::toString() {
-  std::string ret;
+  std::string ret_1, ret_2;
   std::unordered_map<std::string, int> functions;
+  std::unordered_map<std::string, int> times;
   // Add each syscall function into the functions object if it doesn't exist, or
   // add one to the count
   for (auto &it : this->syscall_list) {
@@ -282,6 +285,12 @@ std::string Connection::toString() {
       functions.emplace(it.syscall_name, 1);
     else
       l->second += 1;
+
+    auto l_2 = times.find(it.syscall_name);
+    if (l_2 == times.end())
+      times.emplace(it.syscall_name, it.call_time);
+    else
+      l_2->second += it.call_time;
   }
 
   const std::vector<std::string> vect = {
@@ -293,9 +302,17 @@ std::string Connection::toString() {
       "SyS_accept4",       "SyS_shutdown",       "sock_close"};
   for (const auto &entry : vect) {
     if (functions.find(entry) != functions.end())
-      ret += std::to_string(functions[entry]) + ",";
+      ret_1 += std::to_string(functions[entry]) + ",";
     else
-      ret.append("0,");
+      ret_1.append("0,");
+
+    if (functions.find(entry) != functions.end())
+      ret_2 += std::to_string(times[entry]) + ",";
+    else
+      ret_1.append("0,");
   }
-  return ret.substr(0, ret.size() - 1);
+
+  ret_1 += ret_2;
+
+  return ret_1.substr(0, ret_1.size() - 1);
 }
