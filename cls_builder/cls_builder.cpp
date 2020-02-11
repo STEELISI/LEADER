@@ -312,7 +312,7 @@ std::string Connection::toString() {
       ret_1.append("0,");
   }
 
-  ret_1 += ret_2;
+  ret_2 += ret_1;
 
-  return ret_1.substr(0, ret_1.size() - 1);
+  return ret_2.substr(0, ret_2.size() - 1);
 }
