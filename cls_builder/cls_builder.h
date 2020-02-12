@@ -20,6 +20,7 @@ struct Call {
   int descriptors;
   int mem_alloc;
   int call_time;
+  long long timestamp;
 };
 
 /**

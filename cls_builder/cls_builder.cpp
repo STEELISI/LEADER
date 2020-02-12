@@ -12,7 +12,7 @@ enum CSV {
   fault,
   file,
   cycles,
-  global_time,
+  timestamp,
   curr_time,
   call_time,
   tid,
@@ -91,8 +91,8 @@ void Session::scan(std::istream *in) {
           this_call.descriptors = std::stoi(*i);
         else if (count == fault)
           this_call.page_faults = std::stoi(*i);
-        else if (count == mem)
-          this_call.mem_alloc = std::stoi(*i);
+        else if (count == timestamp)
+          this_call.timestamp = std::stoll(*i);
         else if (count == tid)
           this_tid = std::stoi(*i);
         else if (count == pid)
@@ -279,7 +279,12 @@ std::string Connection::toString() {
   std::unordered_map<std::string, int> times;
   // Add each syscall function into the functions object if it doesn't exist, or
   // add one to the count
+  int counter = 0;
+  long long difference = 0;
+  long long prev_timestamp = 0;
   for (auto &it : this->syscall_list) {
+    
+    std::cout << "Connection: " << it.syscall_name <<" "<<it.timestamp << std::endl;
     auto l = functions.find(it.syscall_name);
     if (l == functions.end())
       functions.emplace(it.syscall_name, 1);
@@ -287,10 +292,24 @@ std::string Connection::toString() {
       l->second += 1;
 
     auto l_2 = times.find(it.syscall_name);
+    if( counter == 0)
+    {	    
     if (l_2 == times.end())
       times.emplace(it.syscall_name, it.call_time);
     else
       l_2->second += it.call_time;
+    counter = 1;
+    prev_timestamp = it.timestamp;
+    }
+    else
+    {
+      difference =  it.timestamp - prev_timestamp;
+      if (l_2 == times.end())
+        times.emplace(it.syscall_name, difference);
+      else
+        l_2->second += difference;
+      prev_timestamp = it.timestamp;
+    }	    
   }
 
   const std::vector<std::string> vect = {
