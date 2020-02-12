@@ -335,7 +335,7 @@ std::string Connection::toString() {
 
   ret_2 += ret_1;
   ret_2 = ret_2.substr(0, ret_2.size() - 1);
-  ret_2 += "\0";
+  ret_2 += "|\0";
   std::cout << "\n\n\n Concatenated : "<<ret_2<<std::endl;
   return ret_2;
   //return ret_2.substr(0, ret_2.size() - 1);
