@@ -334,6 +334,9 @@ std::string Connection::toString() {
   std::cout << "Frequencies : "<<ret_1<<std::endl;
 
   ret_2 += ret_1;
-
-  return ret_2.substr(0, ret_2.size() - 1);
+  ret_2 = ret_2.substr(0, ret_2.size() - 1);
+  ret_2 += "\0";
+  std::cout << "\n\n\n Concatenated : "<<ret_2<<std::endl;
+  return ret_2;
+  //return ret_2.substr(0, ret_2.size() - 1);
 }
