@@ -294,10 +294,10 @@ std::string Connection::toString() {
     auto l_2 = times.find(it.syscall_name);
     if( counter == 0)
     {	    
-    if (l_2 == times.end())
+    //if (l_2 == times.end())
       times.emplace(it.syscall_name, it.call_time);
-    else
-      l_2->second += it.call_time;
+   // else
+   //   l_2->second += it.call_time;
     counter = 1;
     prev_timestamp = it.timestamp;
     }
@@ -328,8 +328,10 @@ std::string Connection::toString() {
     if (functions.find(entry) != functions.end())
       ret_2 += std::to_string(times[entry]) + ",";
     else
-      ret_1.append("0,");
+      ret_2.append("0,");
   }
+  std::cout << "Durations : "<<ret_2<<std::endl;
+  std::cout << "Frequencies : "<<ret_1<<std::endl;
 
   ret_2 += ret_1;
 
