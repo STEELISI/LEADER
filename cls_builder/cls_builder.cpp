@@ -173,7 +173,7 @@ void Session::scan(std::istream *in) {
           this_conn->port = conn_port;
           this_conn->ip_addr = ip;
         }
-
+        std::cout << "IP: " <<this_conn->ip_addr<<" Port: "<<this_conn->port<< std::endl;
         // Add port to connections map
         if (this->connections.find(ip) == this->connections.end()) {
           // Connections has neither IP and port, add IP and port to list
@@ -334,8 +334,8 @@ std::string Connection::toString() {
   std::cout << "Frequencies : "<<ret_1<<std::endl;
 
   ret_2 += ret_1;
-  ret_2 = ret_2.substr(0, ret_2.size() - 1);
-  ret_2 += "|\0";
+  //ret_2 = ret_2.substr(0, ret_2.size() - 1);
+  ret_2 += "1|\0";
   std::cout << "\n\n\n Concatenated : "<<ret_2<<std::endl;
   return ret_2;
   //return ret_2.substr(0, ret_2.size() - 1);

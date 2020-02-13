@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
       }	      
 
       std::cout <<"Connection: "<< conn_ex << std::endl;
-      std::cout << model.analyze_conn(conn_ex) << std::endl;
+      std::cout <<"Score: "<< model.analyze_conn(conn_ex) << " :Scored"<< std::endl;
     } else
       std::cout << "nullptr conn" << std::endl;
   }
