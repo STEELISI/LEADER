@@ -134,7 +134,7 @@ void Session::scan(std::istream *in) {
 
         // Only increment call if we deem it useful
         if (useful_calls.find(call) != useful_calls.end()) {
-          c.syscall_list.insert(a, call);
+          c.syscall_list_count.insert(a, call);
           a->second += 1;
         }
 
@@ -156,7 +156,7 @@ void Session::scan(std::istream *in) {
           // Only increment call if we deem it useful and not ending call
           if (useful_calls.find(call) != useful_calls.end()) {
             temp_ac->second.tested = false;
-            temp_ac->second.syscall_list.insert(a, call);
+            temp_ac->second.syscall_list_count.insert(a, call);
             a->second += 1;
           }
         } else {
@@ -165,7 +165,7 @@ void Session::scan(std::istream *in) {
 
           // Only increment call if we deem it useful
           if (useful_calls.find(call) != useful_calls.end()) {
-            c.syscall_list.insert(a, call);
+            c.syscall_list_count.insert(a, call);
             a->second += 1;
           }
 
@@ -220,15 +220,6 @@ void Session::push() {
  */
 std::string Connection::toString() {
   std::string ret;
-  std::unordered_map<std::string, int> functions;
-  // Add each syscall function into the functions object if it doesn't exist, or add one to count
-  for (auto it = this->syscall_list.begin(); it != this->syscall_list.end(); ++it) {
-    auto l = functions.find(it->first);
-    if (l == functions.end())
-      functions.emplace(it->first, 1);
-    else
-      l->second += 1;
-  }
 
   // Order the vects correctly
   const std::vector<std::string> vect = {
@@ -238,13 +229,22 @@ std::string Connection::toString() {
       "SYSC_accept4",      "sock_destroy_inode", "sock_read_iter",
       "sock_recvmsg",      "sock_sendmsg",       "__sock_release",
       "SyS_accept4",       "SyS_shutdown",       "sock_close"};
+
   for (const auto &entry : vect) {
-    if (functions.find(entry) != functions.end())
-      ret += std::to_string(functions[entry]) + ",";
+    // Add all freqs
+    tbb::concurrent_hash_map<std::string, unsigned int>::accessor ac;
+    if (syscall_list_count.find(ac, entry))
+      ret += std::to_string(ac->second) + ",";
+    else
+      ret.append("0,");
+    // Add all times
+    if (syscall_list_time.find(ac, entry))
+      ret += std::to_string(ac->second) + ",";
     else
       ret.append("0,");
   }
 
-  // Take out the last `,` character
-  return ret.substr(0, ret.size() - 1);
+  // Replace the last `,` character with \0
+  ret.back() = '\0';
+  return ret;
 }
