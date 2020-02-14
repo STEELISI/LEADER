@@ -93,7 +93,7 @@ void Session::scan(std::istream *in) {
       std::cout << "line match" << std::endl;
 
       // Call to add to a connection
-      unsigned int this_pid = -1, conn_port = -1, this_tid = -1;
+      unsigned int this_pid = -1, conn_port = -1, this_tid = -1, this_time = 0;
       bool has_port = false;
       std::string ip, call;
 
@@ -111,6 +111,8 @@ void Session::scan(std::istream *in) {
           this_tid = std::stoi(*i);
         else if (count == pid)
           this_pid = std::stoi(*i);
+        else if (count == call_time)
+          this_time = std::stoi(*i);
         else if (count == addr && *i != "-1") {
           ip = *i;
           has_port = true;
@@ -136,6 +138,9 @@ void Session::scan(std::istream *in) {
         if (useful_calls.find(call) != useful_calls.end()) {
           c.syscall_list_count.insert(a, call);
           a->second += 1;
+
+          c.syscall_list_time.insert(a, call);
+          a->second += this_time;
         }
 
         // Create tid entry
@@ -155,9 +160,13 @@ void Session::scan(std::istream *in) {
           // TID exists too, add to existing connection
           // Only increment call if we deem it useful and not ending call
           if (useful_calls.find(call) != useful_calls.end()) {
-            temp_ac->second.tested = false;
             temp_ac->second.syscall_list_count.insert(a, call);
             a->second += 1;
+
+            temp_ac->second.syscall_list_time.insert(a, call);
+            a->second += this_time;
+
+            temp_ac->second.tested = false;
           }
         } else {
           // TID doesn't exist, create connection and add to pid_map
@@ -167,6 +176,11 @@ void Session::scan(std::istream *in) {
           if (useful_calls.find(call) != useful_calls.end()) {
             c.syscall_list_count.insert(a, call);
             a->second += 1;
+
+            c.syscall_list_time.insert(a, call);
+            a->second += this_time;
+
+            temp_ac->second.tested = false;
           }
 
           pid_map.insert(temp_ac, this_tid);
