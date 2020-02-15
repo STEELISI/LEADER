@@ -47,8 +47,19 @@ int main(int argc, char *argv[]) {
 
     // If message is readable analyze and output result
     if (conn[0] != 0) {
-      std::cout << conn << std::endl;
-      std::cout << model.analyze_conn(conn) << std::endl;
+      char conn_ex[4096];
+
+      for(int i=0;i<4096;i++) {
+	      if(conn[i] != '|')
+	        conn_ex[i] = conn[i];
+	      else {
+	        conn_ex[i] = '\0';
+		      break;
+	      }
+      }
+
+      std::cout <<"Connection: "<< conn_ex << std::endl;
+      std::cout << model.analyze_conn(conn_ex) << std::endl;
     } else
       std::cout << "nullptr conn" << std::endl;
   }

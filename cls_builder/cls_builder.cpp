@@ -258,7 +258,8 @@ std::string Connection::toString() {
       ret.append("0,");
   }
 
-  // Replace the last `,` character with \0
-  ret.back() = '\0';
+  // Set the last chars to "|\0"
+  ret.back() = '|';
+  ret.push_back('\0');
   return ret;
 }
