@@ -58,6 +58,19 @@ probe netfilter.ip.local_out {
   connect[tid()] = 1
 }
 
+// We probe each TCP connection whenever accept() call occurs
+probe kernel.function("tcp_accept").return?,
+      kernel.function("inet_csk_accept").return? {
+  sock = $return
+  if (sock != 0)
+  { 
+    ip[tid()] = inet_get_ip_source(sock)
+    p[tid()] = inet_get_local_port(sock)
+    connect[tid()] = 1
+  } 
+    
+}
+
 // We remember the current time when the socket.c function is called so we can measure
 // the overall duration of the function call.
 probe kernel.function("*@net/socket.c").call {
