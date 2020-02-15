@@ -115,6 +115,7 @@ void Session::scan(std::istream *in) {
                 if (inet_ntop(AF_INET6, buf, str, INET6_ADDRSTRLEN) != NULL) {
                     
                    ip = str;
+		   ip = ip.substr(ip.find_last_of(":") + 1); 
 		   std::cout << "\n IP identified is "<<ip<<std::endl;
 
 	        }
