@@ -1,5 +1,9 @@
 #include "cls_builder.h"
 #include <boost/tokenizer.hpp>
+#include <arpa/inet.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include <chrono>
 #include <exception>
 #include <iostream>
@@ -115,6 +119,24 @@ void Session::scan(std::istream *in) {
           this_time = std::stoi(*i);
         else if (count == addr && *i != "-1") {
           ip = *i;
+          if(ip.find(":") != std::string::npos) {
+            unsigned char buf[sizeof(struct in6_addr)];
+            int s;
+            char str[INET6_ADDRSTRLEN];
+            s = inet_pton(AF_INET6, ip.c_str(), buf);
+            if(s > 0)
+            {
+                if (inet_ntop(AF_INET6, buf, str, INET6_ADDRSTRLEN) != NULL) {
+
+                   ip = str;
+                   ip = ip.substr(ip.find_last_of(":") + 1);
+                   std::cout << "\n IP identified is "<<ip<<std::endl;
+
+                }
+
+             }
+
+          }
           has_port = true;
         } else if (count == port && *i != "-1") {
           conn_port = std::stoi(*i);
