@@ -31,7 +31,8 @@ def test_model(conn, model):
     if(len(feature_values) == n_features):
         feature_values = [int(i) for i in feature_values]
         df = pd.DataFrame(np.array(feature_values).reshape(1,n_features))
-        feature_values = df.as_matrix()
+        #feature_values = df.as_matrix()
+        feature_values = df.values
         output = model.predict(feature_values)
         return output
-    return -1
+    return 2
