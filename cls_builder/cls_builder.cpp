@@ -201,8 +201,6 @@ void Session::scan(std::istream *in) {
 
             c.syscall_list_time.insert(a, call);
             a->second += this_time;
-
-            temp_ac->second.tested = false;
           }
 
           pid_map.insert(temp_ac, this_tid);
@@ -215,12 +213,14 @@ void Session::scan(std::istream *in) {
       if (has_port) {
         // Find the connection in the big hash map
         tbb::concurrent_hash_map<unsigned int, Connection>::accessor temp_ac;
-        this->conns.find(conns_ac, this_pid);
-        conns_ac->second.find(temp_ac, this_tid);
-        // Only link if connection does not have a port yet
-        if (temp_ac->second.port == 0) {
-          temp_ac->second.port = conn_port;
-          temp_ac->second.ip_addr = ip;
+        if(this->conns.find(conns_ac, this_pid)) {
+          if(conns_ac->second.find(temp_ac, this_tid)) {
+            // Only link if connection does not have a port yet
+            if (temp_ac->second.port == 0) {
+              temp_ac->second.port = conn_port;
+              temp_ac->second.ip_addr = ip;
+            }
+          }
         }
       }
     }
