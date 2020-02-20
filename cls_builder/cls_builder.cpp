@@ -17,7 +17,7 @@ enum CSV {
   fault,
   file,
   cycles,
-  global_time,
+  timestamp,
   curr_time,
   call_time,
   tid,
@@ -97,7 +97,8 @@ void Session::scan(std::istream *in) {
       std::cout << "line match" << std::endl;
 
       // Call to add to a connection
-      unsigned int this_pid = -1, conn_port = -1, this_tid = -1, this_time = 0;
+      unsigned int this_pid = -1, conn_port = -1, this_tid = -1;
+      long long this_time = 0;
       bool has_port = false;
       std::string ip, call;
 
@@ -115,8 +116,10 @@ void Session::scan(std::istream *in) {
           this_tid = std::stoi(*i);
         else if (count == pid)
           this_pid = std::stoi(*i);
-        else if (count == call_time)
-          this_time = std::stoi(*i);
+        else if (count == timestamp)
+	{
+          this_time = std::stoll(*i);          
+	}  
         else if (count == addr && *i != "-1") {
           ip = *i;
           if(ip.find(":") != std::string::npos) {
@@ -160,9 +163,10 @@ void Session::scan(std::istream *in) {
         if (useful_calls.find(call) != useful_calls.end()) {
           c.syscall_list_count.insert(a, call);
           a->second += 1;
-
+	  std::cout << this_tid <<" "<<this_time<<" "<<c.prev<<" "<< call <<" |+ "<< std::endl;
+	  c.prev = this_time;
           c.syscall_list_time.insert(a, call);
-          a->second += this_time;
+          a->second += 0;
         }
 
         // Create tid entry
@@ -178,16 +182,19 @@ void Session::scan(std::istream *in) {
         tbb::concurrent_hash_map<unsigned int, Connection>::accessor temp_ac;
         // PID does exist, check if TID does
         auto pid_map = conns_ac->second;
-        if(pid_map.find(temp_ac, this_tid)) {
+				auto res = pid_map.find(temp_ac, this_tid);
+        if(res) {
           // TID exists too, add to existing connection
           // Only increment call if we deem it useful and not ending call
           if (useful_calls.find(call) != useful_calls.end()) {
             temp_ac->second.syscall_list_count.insert(a, call);
             a->second += 1;
-
+            long long previous_time = temp_ac->second.prev;
+	    std::cout << this_tid <<" "<<this_time<<" "<<temp_ac->second.prev<<" "<< call <<" |2 "<< std::endl;  
             temp_ac->second.syscall_list_time.insert(a, call);
-            a->second += this_time;
-
+            a->second += (this_time - previous_time);
+	    std::cout << a->second <<" 2nd "<< std::endl;
+	    temp_ac->second.prev = this_time;
             temp_ac->second.tested = false;
           }
         } else {
@@ -198,11 +205,10 @@ void Session::scan(std::istream *in) {
           if (useful_calls.find(call) != useful_calls.end()) {
             c.syscall_list_count.insert(a, call);
             a->second += 1;
-
+	    std::cout << this_tid <<" "<<this_time<<" "<<c.prev<<" "<< call <<" |3 "<< std::endl;
+            c.prev = this_time;
             c.syscall_list_time.insert(a, call);
-            a->second += this_time;
-
-            temp_ac->second.tested = false;
+            a->second += 0;
           }
 
           pid_map.insert(temp_ac, this_tid);
@@ -215,13 +221,15 @@ void Session::scan(std::istream *in) {
       if (has_port) {
         // Find the connection in the big hash map
         tbb::concurrent_hash_map<unsigned int, Connection>::accessor temp_ac;
-        this->conns.find(conns_ac, this_pid);
-        conns_ac->second.find(temp_ac, this_tid);
-        // Only link if connection does not have a port yet
-        if (temp_ac->second.port == 0) {
-          temp_ac->second.port = conn_port;
-          temp_ac->second.ip_addr = ip;
-        }
+        if(this->conns.find(conns_ac, this_pid)) {
+	        if(conns_ac->second.find(temp_ac, this_tid)) {
+  		      // Only link if connection does not have a port yet
+		        if (temp_ac->second.port == 0) {
+	  	        temp_ac->second.port = conn_port;
+	    	      temp_ac->second.ip_addr = ip;
+  	      	}
+					}
+				}
       }
     }
   }
@@ -281,7 +289,7 @@ std::string Connection::toString() {
   }
 
   // Set the last chars to "|\0"
-  ret.back() = '|';
+  ret.append("1|");
   ret.push_back('\0');
   return ret;
 }

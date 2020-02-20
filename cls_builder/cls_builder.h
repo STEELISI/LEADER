@@ -20,6 +20,7 @@ struct Connection {
   tbb::concurrent_hash_map<std::string, unsigned int> syscall_list_count;
   tbb::concurrent_hash_map<std::string, unsigned int> syscall_list_time;
   unsigned int port = -1, tid = -1, pid = -1;
+  long long prev = 0;
   std::string ip_addr;
 
   Connection() = default;
