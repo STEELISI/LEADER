@@ -16,7 +16,6 @@
  * The Connection class stores system calls related to a single connection.
  */
 struct Connection {
-  bool tested = false;
   tbb::concurrent_hash_map<std::string, unsigned int> syscall_list_count;
   tbb::concurrent_hash_map<std::string, unsigned int> syscall_list_time;
   unsigned int port = -1, tid = -1, pid = -1;

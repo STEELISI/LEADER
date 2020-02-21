@@ -91,10 +91,8 @@ void Session::scan(std::istream *in) {
       ")(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(.*?)(,)(.*?)");
 
   while (std::getline(*in, line)) {
-    std::cout << "line in: " << line << std::endl;
     // Only match if it is a data line and not extra stuff
     if (std::regex_match(line, csv_match)) {
-      std::cout << "line match" << std::endl;
 
       // Call to add to a connection
       unsigned int this_pid = -1, conn_port = -1, this_tid = -1, this_time = 0;
@@ -127,13 +125,9 @@ void Session::scan(std::istream *in) {
             if(s > 0)
             {
                 if (inet_ntop(AF_INET6, buf, str, INET6_ADDRSTRLEN) != nullptr) {
-
                    ip = str;
                    ip = ip.substr(ip.find_last_of(':') + 1);
-                   std::cout << "\n IP identified is "<<ip<<std::endl;
-
                 }
-
              }
 
           }
@@ -144,9 +138,6 @@ void Session::scan(std::istream *in) {
         }
         count++;
       }
-
-      std::cout << "stap call - tid: " << this_tid << std::endl;
-      std::cout << "            pid: " << this_pid << std::endl << std::endl;
 
       // Add Call object into correct location in Session
       tbb::concurrent_hash_map<std::string, unsigned int>::accessor a;
@@ -196,6 +187,7 @@ void Session::scan(std::istream *in) {
             a.release();
           }
         } else {
+          temp_ac.release();
           // TID doesn't exist, create connection and add to pid_map
           Connection c;
 
