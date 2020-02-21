@@ -26,8 +26,6 @@ enum CSV {
   port
 };
 
-bool lock = false;
-
 /**
  * The constructor spins off a new thread and runs start_stap() on that thread
  */
@@ -140,9 +138,6 @@ void Session::scan(std::istream *in) {
         count++;
       }
 
-      while (!lock) {
-      }
-
       // Add Call object into correct location in Session
       if (this->conns.find(this_pid) == this->conns.end()) {
         // PID and TID pair does not exist, so create both and add to conns
@@ -169,16 +164,15 @@ void Session::scan(std::istream *in) {
           if (useful_calls.find(call) != useful_calls.end()) {
             auto c = &pid_map->at(this_tid);
 
-            // Get new count and time for this call
-            unsigned int cnt =
-                (c->syscall_list_count.find(call) == c->syscall_list_count.end()) ? 1 : c->syscall_list_count.at(call),
-                time =
-                (c->syscall_list_time.find(call) == c->syscall_list_time.end()) ? this_time :
-                (c->syscall_list_time.at(call) + this_time);
+            // Set new count and time for this call
+            if (c->syscall_list_count.find(call) == c->syscall_list_count.end()){
+              c->syscall_list_count.insert({call, 1});
+              c->syscall_list_time.insert({call, this_time});
+            } else {
+              c->syscall_list_count.at(call) += 1;
+              c->syscall_list_time.at(call) += this_time;
+            }
 
-            // And then set it
-            c->syscall_list_count.insert({call, cnt});
-            c->syscall_list_time.insert({call, time});
           }
         } else {
           // TID doesn't exist, create connection and add to pid_map
@@ -236,7 +230,7 @@ void Session::push() {
  * @return A string that the consumer can parse
  */
 std::string Connection::toString() {
-  std::string ret;
+  std::string ret1, ret2;
 
   // Order the vects correctly
   const std::vector<std::string> vect = {
@@ -251,19 +245,19 @@ std::string Connection::toString() {
   for (const auto &entry : vect) {
     // Add all freqs
     if (syscall_list_count.find(entry) != syscall_list_count.end())
-      ret += std::to_string(syscall_list_count.at(entry)) + ",";
+      ret1 += std::to_string(syscall_list_count.at(entry)) + ",";
     else
-      ret.append("0,");
+      ret1.append("0,");
 
     // Add all times
     if (syscall_list_time.find(entry) != syscall_list_time.end())
-      ret += std::to_string(syscall_list_time.at(entry)) + ",";
+      ret2 += std::to_string(syscall_list_time.at(entry)) + ",";
     else
-      ret.append("0,");
+      ret2.append("0,");
   }
 
   // Set the last chars to "|\0"
-  ret.back() = '|';
-  ret.push_back('\0');
-  return ret;
+  ret2.back() = '|';
+  ret2.push_back('\0');
+  return ret1 + ret2;
 }
