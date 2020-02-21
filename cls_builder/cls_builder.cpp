@@ -26,6 +26,8 @@ enum CSV {
   port
 };
 
+bool lock = false;
+
 /**
  * The constructor spins off a new thread and runs start_stap() on that thread
  */
@@ -117,18 +119,17 @@ void Session::scan(std::istream *in) {
           this_time = std::stoi(*i);
         else if (count == addr && *i != "-1") {
           ip = *i;
-          if(ip.find(':') != std::string::npos) {
+          if (ip.find(':') != std::string::npos) {
             unsigned char buf[sizeof(struct in6_addr)];
             int s;
             char str[INET6_ADDRSTRLEN];
             s = inet_pton(AF_INET6, ip.c_str(), buf);
-            if(s > 0)
-            {
-                if (inet_ntop(AF_INET6, buf, str, INET6_ADDRSTRLEN) != nullptr) {
-                   ip = str;
-                   ip = ip.substr(ip.find_last_of(':') + 1);
-                }
-             }
+            if (s > 0) {
+              if (inet_ntop(AF_INET6, buf, str, INET6_ADDRSTRLEN) != nullptr) {
+                ip = str;
+                ip = ip.substr(ip.find_last_of(':') + 1);
+              }
+            }
 
           }
           has_port = true;
@@ -139,93 +140,75 @@ void Session::scan(std::istream *in) {
         count++;
       }
 
-      // Add Call object into correct location in Session
-      tbb::concurrent_hash_map<unsigned int, tbb::concurrent_hash_map<unsigned int, Connection>>::accessor conns_ac;
-      if (!this->conns.find(conns_ac, this_pid)) {
-        conns_ac.release();
+      while (!lock) {
+      }
 
+      // Add Call object into correct location in Session
+      if (this->conns.find(this_pid) == this->conns.end()) {
         // PID and TID pair does not exist, so create both and add to conns
         Connection c;
 
-        // Only increment call if we deem it useful
+        // Only increment call if it's useful
         if (useful_calls.find(call) != useful_calls.end()) {
-          tbb::concurrent_hash_map<std::string, unsigned int>::accessor a;
-          c.syscall_list_count.insert(a, call);
-          a->second += 1;
-          a.release();
-
-          c.syscall_list_time.insert(a, call);
-          a->second += this_time;
-          a.release();
+          c.syscall_list_count.insert({call, 1});
+          c.syscall_list_time.insert({call, this_time});
         }
 
-        // Create tid entry
-        tbb::concurrent_hash_map<unsigned int, Connection> temp;
-        tbb::concurrent_hash_map<unsigned int, Connection>::accessor temp_ac;
-        temp.insert(temp_ac, this_tid);
-        temp_ac->second = c;
-        temp_ac.release();
+        // Create a TID entry...
+        tbb::concurrent_unordered_map<unsigned int, Connection> temp;
+        temp.insert({this_tid, c});
 
-        // Put into PID entry
-        conns.insert(conns_ac, this_pid);
-        conns_ac->second = temp;
+        // ... and put it into the PID entry
+        conns.insert({this_pid, temp});
       } else {
-        tbb::concurrent_hash_map<unsigned int, Connection>::accessor temp_ac;
         // PID does exist, check if TID does
-        auto pid_map = conns_ac->second;
-        if(pid_map.find(temp_ac, this_tid)) {
+        auto pid_map = &conns.at(this_pid);
+        if (pid_map->find(this_tid) != pid_map->end()) {
           // TID exists too, add to existing connection
           // Only increment call if we deem it useful and not ending call
           if (useful_calls.find(call) != useful_calls.end()) {
-            tbb::concurrent_hash_map<std::string, unsigned int>::accessor a;
-            temp_ac->second.syscall_list_count.insert(a, call);
-            a->second += 1;
-            a.release();
+            auto c = &pid_map->at(this_tid);
 
-            temp_ac->second.syscall_list_time.insert(a, call);
-            a->second += this_time;
-            a.release();
+            // Get new count and time for this call
+            unsigned int cnt =
+                (c->syscall_list_count.find(call) == c->syscall_list_count.end()) ? 1 : c->syscall_list_count.at(call),
+                time =
+                (c->syscall_list_time.find(call) == c->syscall_list_time.end()) ? this_time :
+                (c->syscall_list_time.at(call) + this_time);
+
+            // And then set it
+            c->syscall_list_count.insert({call, cnt});
+            c->syscall_list_time.insert({call, time});
           }
         } else {
-          temp_ac.release();
           // TID doesn't exist, create connection and add to pid_map
           Connection c;
 
           // Only increment call if we deem it useful
           if (useful_calls.find(call) != useful_calls.end()) {
-            tbb::concurrent_hash_map<std::string, unsigned int>::accessor a;
-            c.syscall_list_count.insert(a, call);
-            a->second += 1;
-            a.release();
-
-            c.syscall_list_time.insert(a, call);
-            a->second += this_time;
-            a.release();
+            c.syscall_list_count.insert({call, 1});
+            c.syscall_list_time.insert({call, this_time});
           }
 
-          pid_map.insert(temp_ac, this_tid);
-          temp_ac->second = c;
+          pid_map->insert({this_tid, c});
         }
-        temp_ac.release();
       }
-      conns_ac.release();
 
       // Link Connection to IP address and Port
       // TODO: only if IP is 10.10.1.*
       if (has_port) {
         // Find the connection in the big hash map
-        if(this->conns.find(conns_ac, this_pid)) {
-          tbb::concurrent_hash_map<unsigned int, Connection>::accessor temp_ac;
-          if(conns_ac->second.find(temp_ac, this_tid)) {
+        if (this->conns.find(this_pid) != this->conns.end()) {
+          auto tid_map = &this->conns.at(this_pid);
+          if (tid_map->find(this_tid) != tid_map->end()) {
+            auto c = &tid_map->at(this_tid);
             // Only link if connection does not have a port yet
-            if (temp_ac->second.port == 0) {
-              temp_ac->second.port = conn_port;
-              temp_ac->second.ip_addr = ip;
+            if (c->port == 0) {
+              c->port = conn_port;
+              c->ip_addr = ip;
             }
           }
-          temp_ac.release();
         }
-        conns_ac.release();
       }
     }
   }
@@ -236,11 +219,11 @@ void Session::scan(std::istream *in) {
  */
 void Session::push() {
   // run forever
-  while(true) {
+  while (true) {
     // loop through each connection
-    for(auto iter = this->conns.begin(); iter != this->conns.end(); ++iter)
-      for(auto it = iter->second.begin(); it != iter->second.end(); ++it)
-        mq->send(it->second.toString().c_str(), it->second.toString().length(), 0);
+    for (auto conn_list : conns)
+      for (auto conn : conn_list.second)
+        mq->send(conn.second.toString().c_str(), conn.second.toString().length(), 0);
 
     // sleep one second after computation
     std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -257,30 +240,26 @@ std::string Connection::toString() {
 
   // Order the vects correctly
   const std::vector<std::string> vect = {
-      "sock_poll",         "sock_write_iter",    "sockfd_lookup_light",
-      "sock_alloc_inode",  "sock_alloc",         "sock_alloc_file",
-      "move_addr_to_user", "SYSC_getsockname",   "SyS_getsockname",
-      "SYSC_accept4",      "sock_destroy_inode", "sock_read_iter",
-      "sock_recvmsg",      "sock_sendmsg",       "__sock_release",
-      "SyS_accept4",       "SyS_shutdown",       "sock_close"
+      "sock_poll", "sock_write_iter", "sockfd_lookup_light",
+      "sock_alloc_inode", "sock_alloc", "sock_alloc_file",
+      "move_addr_to_user", "SYSC_getsockname", "SyS_getsockname",
+      "SYSC_accept4", "sock_destroy_inode", "sock_read_iter",
+      "sock_recvmsg", "sock_sendmsg", "__sock_release",
+      "SyS_accept4", "SyS_shutdown", "sock_close"
   };
 
   for (const auto &entry : vect) {
-    tbb::concurrent_hash_map<std::string, unsigned int>::accessor ac;
-
     // Add all freqs
-    if (syscall_list_count.find(ac, entry))
-      ret += std::to_string(ac->second) + ",";
+    if (syscall_list_count.find(entry) != syscall_list_count.end())
+      ret += std::to_string(syscall_list_count.at(entry)) + ",";
     else
       ret.append("0,");
-    ac.release();
 
     // Add all times
-    if (syscall_list_time.find(ac, entry))
-      ret += std::to_string(ac->second) + ",";
+    if (syscall_list_time.find(entry) != syscall_list_time.end())
+      ret += std::to_string(syscall_list_time.at(entry)) + ",";
     else
       ret.append("0,");
-    ac.release();
   }
 
   // Set the last chars to "|\0"
