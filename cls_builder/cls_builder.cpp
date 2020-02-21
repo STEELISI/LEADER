@@ -140,9 +140,7 @@ void Session::scan(std::istream *in) {
       }
 
       // Add Call object into correct location in Session
-      tbb::concurrent_hash_map<std::string, unsigned int>::accessor a;
-      tbb::concurrent_hash_map<unsigned int,
-                               tbb::concurrent_hash_map<unsigned int, Connection>>::accessor conns_ac;
+      tbb::concurrent_hash_map<unsigned int, tbb::concurrent_hash_map<unsigned int, Connection>>::accessor conns_ac;
       if (!this->conns.find(conns_ac, this_pid)) {
         conns_ac.release();
 
@@ -151,6 +149,7 @@ void Session::scan(std::istream *in) {
 
         // Only increment call if we deem it useful
         if (useful_calls.find(call) != useful_calls.end()) {
+          tbb::concurrent_hash_map<std::string, unsigned int>::accessor a;
           c.syscall_list_count.insert(a, call);
           a->second += 1;
           a.release();
@@ -178,6 +177,7 @@ void Session::scan(std::istream *in) {
           // TID exists too, add to existing connection
           // Only increment call if we deem it useful and not ending call
           if (useful_calls.find(call) != useful_calls.end()) {
+            tbb::concurrent_hash_map<std::string, unsigned int>::accessor a;
             temp_ac->second.syscall_list_count.insert(a, call);
             a->second += 1;
             a.release();
@@ -193,6 +193,7 @@ void Session::scan(std::istream *in) {
 
           // Only increment call if we deem it useful
           if (useful_calls.find(call) != useful_calls.end()) {
+            tbb::concurrent_hash_map<std::string, unsigned int>::accessor a;
             c.syscall_list_count.insert(a, call);
             a->second += 1;
             a.release();
@@ -213,8 +214,8 @@ void Session::scan(std::istream *in) {
       // TODO: only if IP is 10.10.1.*
       if (has_port) {
         // Find the connection in the big hash map
-        tbb::concurrent_hash_map<unsigned int, Connection>::accessor temp_ac;
         if(this->conns.find(conns_ac, this_pid)) {
+          tbb::concurrent_hash_map<unsigned int, Connection>::accessor temp_ac;
           if(conns_ac->second.find(temp_ac, this_tid)) {
             // Only link if connection does not have a port yet
             if (temp_ac->second.port == 0) {
