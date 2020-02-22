@@ -17,7 +17,7 @@ enum CSV {
   fault,
   file,
   cycles,
-  global_time,
+  timestamp,
   curr_time,
   call_time,
   tid,
@@ -95,7 +95,8 @@ void Session::scan(std::istream *in) {
     if (std::regex_match(line, csv_match)) {
 
       // Call to add to a connection
-      unsigned int this_pid = -1, conn_port = -1, this_tid = -1, this_time = 0;
+      unsigned int this_pid = -1, conn_port = -1, this_tid = -1;
+      long long this_time = 0;
       bool has_port = false;
       std::string ip, call;
 
@@ -113,8 +114,8 @@ void Session::scan(std::istream *in) {
           this_tid = std::stoi(*i);
         else if (count == pid)
           this_pid = std::stoi(*i);
-        else if (count == call_time)
-          this_time = std::stoi(*i);
+        else if (count == timestamp)
+          this_time = std::stoll(*i);
         else if (count == addr && *i != "-1") {
           ip = *i;
           if (ip.find(':') != std::string::npos) {
@@ -146,7 +147,8 @@ void Session::scan(std::istream *in) {
         // Only increment call if it's useful
         if (useful_calls.find(call) != useful_calls.end()) {
           c.syscall_list_count.insert({call, 1});
-          c.syscall_list_time.insert({call, this_time});
+          c.syscall_list_time.insert({call, 0});
+	  c.prev = this_time;
         }
 
         // Create a TID entry...
@@ -167,10 +169,13 @@ void Session::scan(std::istream *in) {
             // Set new count and time for this call
             if (c->syscall_list_count.find(call) == c->syscall_list_count.end()){
               c->syscall_list_count.insert({call, 1});
-              c->syscall_list_time.insert({call, this_time});
+              long long diff = (c->prev == 0) ? 0 : (this_time - c->prev);
+              c->syscall_list_time.insert({call,diff});
+	      c->prev = this_time;
             } else {
               c->syscall_list_count.at(call) += 1;
-              c->syscall_list_time.at(call) += this_time;
+              c->syscall_list_time.at(call) += (this_time - c->prev);
+	      c->prev = this_time;
             }
 
           }
@@ -181,7 +186,8 @@ void Session::scan(std::istream *in) {
           // Only increment call if we deem it useful
           if (useful_calls.find(call) != useful_calls.end()) {
             c.syscall_list_count.insert({call, 1});
-            c.syscall_list_time.insert({call, this_time});
+            c.syscall_list_time.insert({call, 0});
+	    c.prev = this_time;
           }
 
           pid_map->insert({this_tid, c});
@@ -256,9 +262,9 @@ std::string Connection::toString() {
       ret2.append("0,");
   }
 
-  ret2.append("1|\0");
+  ret1.append("1|\0");
   //ret2.back() = '|';
   //ret2.push_back('\0');
-  return ret1 + ret2;
+  return ret2 + ret1;
 }
 
