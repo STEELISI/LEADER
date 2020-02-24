@@ -94,11 +94,13 @@ void Session::scan(std::istream *in) {
     // Only match if it is a data line and not extra stuff
     if (std::regex_match(line, csv_match)) {
 
+      std::cout << "Line: " << line << std::endl;
       // Call to add to a connection
       unsigned int this_pid = -1, conn_port = -1, this_tid = -1;
       long long this_time = 0;
       bool has_port = false;
       std::string ip, call;
+      int ip_flag = 0;
 
       // Turn the CSV into a boost::tokenizer for easy parsing
       unsigned int count = 0;
@@ -117,6 +119,7 @@ void Session::scan(std::istream *in) {
         else if (count == timestamp)
           this_time = std::stoll(*i);
         else if (count == addr && *i != "-1") {
+          ip_flag = 1;
           ip = *i;
           if (ip.find(':') != std::string::npos) {
             unsigned char buf[sizeof(struct in6_addr)];
@@ -127,6 +130,7 @@ void Session::scan(std::istream *in) {
               if (inet_ntop(AF_INET6, buf, str, INET6_ADDRSTRLEN) != nullptr) {
                 ip = str;
                 ip = ip.substr(ip.find_last_of(':') + 1);
+                std::cout << "IP ADDRESS: " << ip << std::endl;
               }
             }
 
@@ -149,6 +153,10 @@ void Session::scan(std::istream *in) {
           c.syscall_list_count.insert({call, 1});
           c.syscall_list_time.insert({call, 0});
 	  c.prev = this_time;
+	  if(ip_flag == 1)
+          {		  
+	  	c.ip_addr = ip;
+	  }
         }
 
         // Create a TID entry...
@@ -172,10 +180,17 @@ void Session::scan(std::istream *in) {
               long long diff = (c->prev == 0) ? 0 : (this_time - c->prev);
               c->syscall_list_time.insert({call,diff});
 	      c->prev = this_time;
+	      if(ip_flag == 1)
+              {		      
+	      c->ip_addr = ip;
+	      }
             } else {
               c->syscall_list_count.at(call) += 1;
               c->syscall_list_time.at(call) += (this_time - c->prev);
 	      c->prev = this_time;
+	      if(ip_flag == 1){		      
+	      c->ip_addr = ip;
+	      }
             }
 
           }
@@ -188,6 +203,9 @@ void Session::scan(std::istream *in) {
             c.syscall_list_count.insert({call, 1});
             c.syscall_list_time.insert({call, 0});
 	    c.prev = this_time;
+	    if(ip_flag == 1){
+	    c.ip_addr = ip;
+	    }
           }
 
           pid_map->insert({this_tid, c});
@@ -205,7 +223,9 @@ void Session::scan(std::istream *in) {
             // Only link if connection does not have a port yet
             if (c->port == 0) {
               c->port = conn_port;
+	      if(ip_flag == 1){
               c->ip_addr = ip;
+	      }
             }
           }
         }
@@ -262,7 +282,10 @@ std::string Connection::toString() {
       ret2.append("0,");
   }
 
-  ret1.append("1|\0");
+  ret1.append("1|");
+  ret1.append(ip_addr);
+  ret1.append("$\0");
+
   //ret2.back() = '|';
   //ret2.push_back('\0');
   return ret2 + ret1;
