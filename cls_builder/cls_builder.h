@@ -10,16 +10,16 @@
 #include <string>
 #include <thread>
 #include <unistd.h>
-#include "tbb/concurrent_hash_map.h"
+#include "tbb/concurrent_unordered_map.h"
 
 /**
  * The Connection class stores system calls related to a single connection.
  */
 struct Connection {
-  bool tested = false;
-  tbb::concurrent_hash_map<std::string, unsigned int> syscall_list_count;
-  tbb::concurrent_hash_map<std::string, unsigned int> syscall_list_time;
+  tbb::concurrent_unordered_map<std::string, unsigned int> syscall_list_count;
+  tbb::concurrent_unordered_map<std::string, long long> syscall_list_time;
   unsigned int port = -1, tid = -1, pid = -1;
+  long long prev = 0;
   std::string ip_addr;
 
   Connection() = default;
@@ -40,7 +40,7 @@ private:
   std::thread msg_push;
 
   // We change this to a single map of connections since we're tracking in real time
-  tbb::concurrent_hash_map<unsigned int, tbb::concurrent_hash_map<unsigned int, Connection>> conns;
+  tbb::concurrent_unordered_map<unsigned int, tbb::concurrent_unordered_map<unsigned int, Connection>> conns;
   boost::process::ipstream stap_out;
   boost::process::child stap_process;
 
