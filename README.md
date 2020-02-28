@@ -8,8 +8,10 @@ LEADER leverages a novel combination of runtime monitoring and offline binary pr
 ## Installation
 The installation uses CMake and assumes that you have the following libraries available:
 * Boost System - `libboost-system-dev` in Debian
-* libbobcat - `libbobcat-dev` in Debian
+* Intel TBB - `libtbb-dev` in Debian
 * libpython3 - `python3-dev` in Debian
+
+We assume that the latest libraries are being used.
  
 In order to build LEADER, run the following:
 ```bash
