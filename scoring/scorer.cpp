@@ -18,7 +18,7 @@ int Model::analyze_conn(const std::string &in) {
 
   PyObject *ret = PyObject_CallObject(test_func, conn);
   int r = static_cast<int>(PyLong_AsLong(ret));
-  std::cout <<"\n\nSCORE: "<< r << " for conn: " << in.c_str() << std::endl;
+  std::cout <<"\n\nSCORE: "<< r << " for conn: " << in.c_str();
 
   Py_XDECREF(conn);
   Py_XDECREF(ret);

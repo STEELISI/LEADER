@@ -86,6 +86,9 @@ Session::~Session() {
  */
 void Session::scan(std::istream *in) {
   std::string line;
+  //std::string sockfd_lookup_light ("sockfd_lookup_light");
+  std::string sockfd_lookup_light("SYSC_accept4");
+  std::string sockname("SYSC_getsockname");
   std::regex csv_match(
       "((?:[a-zA-Z0-9_]*))(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+"
       ")(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(.*?)(,)(.*?)");
@@ -150,9 +153,14 @@ void Session::scan(std::istream *in) {
 
         // Only increment call if it's useful
         if (useful_calls.find(call) != useful_calls.end()) {
+          //if(strcmp("sockfd_lookup_light",call) == 0)
+	  if(!(sockfd_lookup_light.compare(call)) || !(sockname.compare(call)))
+          {
+          std::cout << "LMN: " << line << std::endl;
           c.syscall_list_count.insert({call, 1});
           c.syscall_list_time.insert({call, 0});
 	  c.prev = this_time;
+	  }
 	  if(ip_flag == 1)
           {		  
 	  	c.ip_addr = ip;
@@ -176,15 +184,30 @@ void Session::scan(std::istream *in) {
 
             // Set new count and time for this call
             if (c->syscall_list_count.find(call) == c->syscall_list_count.end()){
+              //if(strcmp("sockfd_lookup_light",call) == 0)
+	      if((!(sockfd_lookup_light.compare(call)) && c->syscall_list_count.size() ==  0) || c->syscall_list_count.size() > 0 || (!(sockname.compare(call)) && c->syscall_list_count.size() ==  0))
+              {
+	      if(!(sockfd_lookup_light.compare(call)) && c->syscall_list_count.size() ==  0 || (!(sockname.compare(call)) && c->syscall_list_count.size() ==  0))
+	      {
+	      c->syscall_list_count.clear();
+              c->syscall_list_time.clear();
+	      c->prev = 0;
+	      c->ip_addr = "";
+
+              }	      
+              std::cout << "LMN1: " << line << std::endl;		      
               c->syscall_list_count.insert({call, 1});
               long long diff = (c->prev == 0) ? 0 : (this_time - c->prev);
               c->syscall_list_time.insert({call,diff});
 	      c->prev = this_time;
+	      }
 	      if(ip_flag == 1)
               {		      
 	      c->ip_addr = ip;
 	      }
+	      
             } else {
+
               c->syscall_list_count.at(call) += 1;
               c->syscall_list_time.at(call) += (this_time - c->prev);
 	      c->prev = this_time;
@@ -192,7 +215,15 @@ void Session::scan(std::istream *in) {
 	      c->ip_addr = ip;
 	      }
             }
-
+           if(c->syscall_list_count.find("SyS_shutdown") != c->syscall_list_count.end() || c->syscall_list_count.find("sock_destroy_inode") != c->syscall_list_count.end() || c->syscall_list_count.find("__sock_release")!= c->syscall_list_count.end() || c->syscall_list_count.find("sock_close")!= c->syscall_list_count.end() )
+            {
+              mq->send(c->toString().c_str(), c->toString().length(), 0); 
+              c->syscall_list_count.clear();
+              c->syscall_list_time.clear();
+              c->port = -1;
+              c->ip_addr = "";
+              c->prev = 0;
+            } 
           }
         } else {
           // TID doesn't exist, create connection and add to pid_map
@@ -200,9 +231,13 @@ void Session::scan(std::istream *in) {
 
           // Only increment call if we deem it useful
           if (useful_calls.find(call) != useful_calls.end()) {
+            if(!(sockfd_lookup_light.compare(call)) || !(sockname.compare(call)))
+            {
+	    std::cout << "LMN2: " << line << std::endl;
             c.syscall_list_count.insert({call, 1});
             c.syscall_list_time.insert({call, 0});
 	    c.prev = this_time;
+	    }
 	    if(ip_flag == 1){
 	    c.ip_addr = ip;
 	    }
