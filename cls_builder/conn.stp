@@ -77,6 +77,11 @@ probe kernel.function("*@net/socket.c").call {
     call_time[tid()] = gettimeofday_us()
 }
 
+probe tcp.receive {
+  printf(" %15s %15s  %5d  %5d  %d  %d  %d  %d  %d  %d\n",
+         saddr, daddr, sport, dport, urg, ack, psh, rst, syn, fin)
+}
+
 // When the call returns, we output the all the data we currently have on the thread
 // and the syscall itself. If there is an active connection at this time, we also show
 // the remote IP and port. When the connection closes, we clear all values related to

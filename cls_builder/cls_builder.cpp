@@ -95,9 +95,10 @@ void Session::scan(std::istream *in) {
 
   while (std::getline(*in, line)) {
     // Only match if it is a data line and not extra stuff
+    std::cout << "Line: " << line << std::endl;
     if (std::regex_match(line, csv_match)) {
 
-      std::cout << "Line: " << line << std::endl;
+      //std::cout << "Line: " << line << std::endl;
       // Call to add to a connection
       unsigned int this_pid = -1, conn_port = -1, this_tid = -1;
       long long this_time = 0;
