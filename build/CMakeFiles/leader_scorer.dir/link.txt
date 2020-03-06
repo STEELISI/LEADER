@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC -g  -shared -Wl,-soname,libleader_scorer.so -o libleader_scorer.so CMakeFiles/leader_scorer.dir/scoring/scorer.cpp.o 

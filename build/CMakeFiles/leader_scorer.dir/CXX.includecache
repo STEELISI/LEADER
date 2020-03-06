@@ -1,0 +1,20 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/mnt/another/LEADER/scoring/scorer.cpp
+scorer.h
+/mnt/another/LEADER/scoring/scorer.h
+iostream
+-
+
+/mnt/another/LEADER/scoring/scorer.h
+python3.6/Python.h
+/mnt/another/LEADER/scoring/python3.6/Python.h
+string
+-
+

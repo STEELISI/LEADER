@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC -g  -shared -Wl,-soname,libleader_mitigation.so -o libleader_mitigation.so CMakeFiles/leader_mitigation.dir/mitigation/mitigator.cpp.o  /usr/lib/x86_64-linux-gnu/libpython3.6m.so 
