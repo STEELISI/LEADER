@@ -12,14 +12,7 @@
 // enum for the CSV inputs made by SystemTap
 enum CSV {
   func,
-  req,
-  mem,
-  fault,
-  file,
-  cycles,
   timestamp,
-  curr_time,
-  call_time,
   tid,
   pid,
   addr,

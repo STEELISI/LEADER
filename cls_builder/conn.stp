@@ -6,44 +6,6 @@
  * a number of global arrays, assuming that each thread handles one connection
  * at a time.
  */
-global req, fault, file, clock, mem, time, connect, ip, p, call_time
-
-// __fd_install and __fd_close syscalls open and close file descriptors
-probe kernel.function("__fd_install").call {
-  if(execname() == "apache2")
-    file[tid()]++
-}
-probe kernel.function("__close_fd").call {
-  if(execname() == "apache2")
-    file[tid()]--
-}
-
-// Handles context switching per thread
-probe scheduler.ctxswitch {
-  if(next_task_name == "apache2")
-    req[next_tid]++
-}
-
-// Tracks pagefaults during per thread
-probe vm.pagefault {
-  if(execname() == "apache2")
-    fault[tid()]++
-}
-
-// These three syscalls map and unmap memory for a thread. They were mentioned
-// in the COGO paper. length in this case is in pages allocated.
-probe vm.mmap {
-  if(execname() == "apache2")
-    mem[tid()] += length
-}
-probe syscall.mmap2 {
-  if(execname() == "apache2")
-    mem[tid()] += length
-}
-probe vm.munmap {
-  if(execname() == "apache2")
-    mem[tid()] -= length
-}
 
 // We log any network in/out traffic and match it with the thread. This includes
 // but is not limited to Apache traffic.
@@ -89,20 +51,13 @@ probe tcp.receive {
 probe kernel.function("*@net/socket.c").return {
   if(execname() == "apache2") {
     if(connect[tid()] == 1)
-      printf("%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s,%d\n", ppfunc(), req[tid()], mem[tid()], fault[tid()], file[tid()], get_cycles() - clock[tid()], gettimeofday_us(), gettimeofday_us() - time[tid()], gettimeofday_us() - call_time[tid()], tid(), pid(), ip[tid()], p[tid()])
+      printf("%s,%d,%d,%d,%s,%d\n", ppfunc(), gettimeofday_us(), tid(), pid(), ip[tid()], p[tid()])
     else
-      printf("%s,%d,%d,%d,%d,0,%d,0,%d,%d,%d,-1,-1\n", ppfunc(), req[tid()], mem[tid()], fault[tid()], file[tid()], gettimeofday_us(), gettimeofday_us() - call_time[tid()], tid(), pid())
+      printf("%s,%d,%d,%d,-1,-1\n", ppfunc(), gettimeofday_us(), tid(), pid())
   
     if(ppfunc() == "SyS_shutdown" || ppfunc() == "sock_destroy_inode") {
-      delete req[tid()]
-      delete fault[tid()]
-      delete file[tid()]
-      delete clock[tid()]
-      delete time[tid()]
-      delete connect[tid()]
       delete ip[tid()]
       delete p[tid()]
-      delete mem[tid()]
     }
   }
 }
