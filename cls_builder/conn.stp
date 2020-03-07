@@ -10,33 +10,19 @@
 // We log any network in/out traffic and match it with the thread. This includes
 // but is not limited to Apache traffic.
 probe netfilter.ip.local_in {
-  ip[tid()] = saddr
-  p[tid()] = sport
-  connect[tid()] = 1
+  printf("%s,%d,%d,%d,%s,%d\n", ppfunc(), gettimeofday_us(), tid(), pid(), saddr, sport)
 }
 probe netfilter.ip.local_out {
-  ip[tid()] = daddr
-  p[tid()] = dport
-  connect[tid()] = 1
+  printf("%s,%d,%d,%d,%s,%d\n", ppfunc(), gettimeofday_us(), tid(), pid(), daddr, dport)
 }
 
 // We probe each TCP connection whenever accept() call occurs
 probe kernel.function("tcp_accept").return?,
       kernel.function("inet_csk_accept").return? {
   sock = $return
-  if (sock != 0)
-  {
-    ip[tid()] = inet_get_ip_source(sock)
-    p[tid()] = inet_get_local_port(sock)
-    connect[tid()] = 1
+  if (sock != 0) {
+    printf("%s,%d,%d,%d,%s,%d\n", ppfunc(), gettimeofday_us(), tid(), pid(), inet_get_ip_source(sock), inet_get_local_port(sock))
   }
-}
-
-// We remember the current time when the socket.c function is called so we can measure
-// the overall duration of the function call.
-probe kernel.function("*@net/socket.c").call {
-  if(execname() == "apache2")
-    call_time[tid()] = gettimeofday_us()
 }
 
 probe tcp.receive {
@@ -54,29 +40,10 @@ probe kernel.function("*@net/socket.c").return {
       printf("%s,%d,%d,%d,%s,%d\n", ppfunc(), gettimeofday_us(), tid(), pid(), ip[tid()], p[tid()])
     else
       printf("%s,%d,%d,%d,-1,-1\n", ppfunc(), gettimeofday_us(), tid(), pid())
-  
-    if(ppfunc() == "SyS_shutdown" || ppfunc() == "sock_destroy_inode") {
-      delete ip[tid()]
-      delete p[tid()]
-    }
-  }
-}
-
-// When a connection is accepted, we clear all values so we can get accurate
-// per-connection statistics
-probe kernel.function("SyS_accept4").call {
-  if(execname() == "apache2") {
-    req[tid()] = 0
-    fault[tid()] = 0
-    file[tid()] = 0
-    clock[tid()] = get_cycles()
-    time[tid()] = gettimeofday_us()
-    call_time[tid()] = gettimeofday_us()
-    mem[tid()] = 0
   }
 }
 
 // Print out the CSV header when the probe begins
 probe begin {
-  printf("func,req,mem,fault,file,cycles,time,run_time,call_time,tid,pid,addr,port\n")
+  printf("func,timestamp,tid,pid,addr,port\n")
 }
