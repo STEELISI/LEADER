@@ -36,9 +36,6 @@ probe tcp.receive {
 // the conenction so we can get accurate per-connection statistics.
 probe kernel.function("*@net/socket.c").return {
   if(execname() == "apache2") {
-    if(connect[tid()] == 1)
-      printf("%s,%d,%d,%d,%s,%d\n", ppfunc(), gettimeofday_us(), tid(), pid(), ip[tid()], p[tid()])
-    else
       printf("%s,%d,%d,%d,-1,-1\n", ppfunc(), gettimeofday_us(), tid(), pid())
   }
 }
