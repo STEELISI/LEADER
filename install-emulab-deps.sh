@@ -11,7 +11,7 @@ deb http://ddebs.ubuntu.com/ ${codename}-proposed main restricted universe multi
 EOF
 
 sudo apt update
-sudo apt install -y linux-image-$(uname -r)-dbgsym libdw-dev libboost-thread-dev libboost-system-dev libboost-timer-dev libboost-filesystem-dev libboost-atomic-dev libboost-date-time-dev
+sudo apt install -y linux-image-$(uname -r)-dbgsym libdw-dev libboost-all-dev python3-dev
 sudo apt clean
 
 # Build Dyninst
