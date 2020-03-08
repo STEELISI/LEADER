@@ -11,16 +11,9 @@ deb http://ddebs.ubuntu.com/ ${codename}-proposed main restricted universe multi
 EOF
 
 sudo apt update
-sudo apt install -y linux-image-$(uname -r)-dbgsym libdw-dev libboost-all-dev python3-dev
+sudo apt install -y linux-image-$(uname -r)-dbgsym libdw-dev libboost-all-dev python3-dev python3-pip
 sudo apt clean
-
-# Build Dyninst
-#wget https://github.com/dyninst/dyninst/archive/v9.3.2.tar.gz
-#tar xvf v9.3.2.tar.gz && rm -rf v9.3.2.tar.gz
-#cd dyninst-9.3.2/
-#cmake .\
-#make && sudo make install
-#cd ../ && sudo rm -rf dyninst-9.3.2/
+sudo pip3 install sklearn numpy pandas
 
 # Patch and build Systemtap
 wget https://sourceware.org/systemtap/ftp/releases/systemtap-4.0.tar.gz
