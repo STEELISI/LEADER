@@ -42,3 +42,7 @@ cp -r include/* /usr/local/include/
 cp -r lib/intel64/gcc4.8/* /usr/local/lib/
 cp ./cmake/*.cmake /usr/local/share/cmake-3.17/Modules/
 cp ./cmake/templates/* /usr/local/share/cmake-3.17/Templates/
+
+# Add /usr/share/lib to ld
+ldconfig /usr/local/lib
+cat '/usr/local/lib' > /etc/ld.so.conf.d/tbb.conf
