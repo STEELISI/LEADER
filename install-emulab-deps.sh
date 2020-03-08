@@ -11,14 +11,14 @@ deb http://ddebs.ubuntu.com/ ${codename}-proposed main restricted universe multi
 EOF
 
 sudo apt update
-sudo apt install -y linux-image-$(uname -r)-dbgsym libdw-dev libboost-all-dev python3-dev python3-pip
+sudo apt install -y linux-image-$(uname -r)-dbgsym libdw-dev libboost-all-dev python3-dev python3-pip python-pip python-dev
 sudo apt clean
 sudo pip3 install sklearn numpy pandas
 
 # Patch and build Systemtap
-wget https://sourceware.org/systemtap/ftp/releases/systemtap-4.0.tar.gz
-tar xvf systemtap-4.0.tar.gz && rm -rf systemtap-4.0.tar.gz
-cd systemtap-4.0
+git clone git://sourceware.org/git/systemtap.git
+cd systemtap
+git checkout release-4.2
 ./configure && make && sudo make install
 cd ../ && sudo rm -rf systemtap-4.0
 
