@@ -46,6 +46,6 @@ tar xvf tbb-2020.1-lin.tgz
 rm -rf pstl && cd tbb
 cp -r bin/* /usr/local/bin/
 cp -r include/* /usr/local/include/
-cp -r lib/* /usr/local/lib/
+cp -r lib/intel64/gcc4.8/* /usr/local/lib/
 cp ./cmake/*.cmake /usr/local/share/cmake-3.17/Modules/
 cp ./cmake/templates/* /usr/local/share/cmake-3.17/Templates/
