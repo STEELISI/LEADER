@@ -45,4 +45,4 @@ cp ./cmake/templates/* /usr/local/share/cmake-3.17/Templates/
 
 # Add /usr/share/lib to ld
 ldconfig /usr/local/lib
-cat '/usr/local/lib' > /etc/ld.so.conf.d/tbb.conf
+echo '/usr/local/lib' > /etc/ld.so.conf.d/tbb.conf
