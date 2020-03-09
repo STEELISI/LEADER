@@ -82,9 +82,7 @@ void Session::scan(std::istream *in) {
   //std::string sockfd_lookup_light ("sockfd_lookup_light");
   std::string sockfd_lookup_light("SYSC_accept4");
   std::string sockname("SYSC_getsockname");
-  std::regex csv_match(
-      "((?:[a-zA-Z0-9_]*))(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+"
-      ")(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(.*?)(,)(.*?)");
+  std::regex csv_match("((?:[a-zA-Z0-9_]*))(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(.*?)(,)(.*?)");
 
   while (std::getline(*in, line)) {
     // Only match if it is a data line and not extra stuff
