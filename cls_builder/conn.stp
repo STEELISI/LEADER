@@ -6,29 +6,34 @@
  * a number of global arrays, assuming that each thread handles one connection
  * at a time.
  */
+global connect, ip, p
 
 // We log any network in/out traffic and match it with the thread. This includes
 // but is not limited to Apache traffic.
 probe netfilter.ip.local_in {
-  printf("%s,%d,%d,%d,%s,%d\n", ppfunc(), gettimeofday_us(), tid(), pid(), saddr, sport)
+  ip[tid()] = saddr
+  p[tid()] = sport
+  connect[tid()] = 1
 }
 probe netfilter.ip.local_out {
-  printf("%s,%d,%d,%d,%s,%d\n", ppfunc(), gettimeofday_us(), tid(), pid(), daddr, dport)
+  ip[tid()] = daddr
+  p[tid()] = dport
+  connect[tid()] = 1
 }
 
 // We probe each TCP connection whenever accept() call occurs
 probe kernel.function("tcp_accept").return?,
       kernel.function("inet_csk_accept").return? {
   sock = $return
-  if (sock != 0) {
-    printf("%s,%d,%d,%d,%s,%d\n", ppfunc(), gettimeofday_us(), tid(), pid(), inet_get_ip_source(sock), inet_get_local_port(sock))
-  }
+  if (sock != 0)
+  { 
+    ip[tid()] = inet_get_ip_source(sock)
+    p[tid()] = inet_get_local_port(sock)
+    connect[tid()] = 1
+  } 
+    
 }
 
-probe tcp.receive {
-  printf(" %15s %15s  %5d  %5d  %d  %d  %d  %d  %d  %d\n",
-         saddr, daddr, sport, dport, urg, ack, psh, rst, syn, fin)
-}
 
 // When the call returns, we output the all the data we currently have on the thread
 // and the syscall itself. If there is an active connection at this time, we also show
@@ -36,9 +41,19 @@ probe tcp.receive {
 // the conenction so we can get accurate per-connection statistics.
 probe kernel.function("*@net/socket.c").return {
   if(execname() == "apache2") {
+    if(connect[tid()] == 1)
+      printf("%s,%d,%d,%d,%s,%d\n", ppfunc(), gettimeofday_us(), tid(), pid(), ip[tid()], p[tid()])
+    else
       printf("%s,%d,%d,%d,-1,-1\n", ppfunc(), gettimeofday_us(), tid(), pid())
+  
+    if(ppfunc() == "SyS_shutdown" || ppfunc() == "sock_destroy_inode") {
+      delete connect[tid()]
+      delete ip[tid()]
+      delete p[tid()]
+    }
   }
 }
+
 
 // Print out the CSV header when the probe begins
 probe begin {
