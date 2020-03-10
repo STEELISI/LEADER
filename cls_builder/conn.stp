@@ -21,9 +21,25 @@ probe netfilter.ip.local_out {
   connect[tid()] = 1
 }
 
+probe netfilter.ip.local_out {
+  ip[tid()] = saddr
+  p[tid()] = sport
+  connect[tid()] = 1
+}
+
+
 // We probe each TCP connection whenever accept() call occurs
 probe kernel.function("tcp_accept").return?,
-      kernel.function("inet_csk_accept").return? {
+      kernel.function("inet_csk_accept").return?,
+      kernel.function("tcp_connect").return?,
+      kernel.function("tcp_write").return?,
+      kernel.function("tcp_sent").return?,
+      kernel.function("tcp_recv").return?,
+      kernel.function("tcp_recved").return?,
+      kernel.function("tcp_poll").return?,
+      //kernel.function("tcp_close").return?,
+      kernel.function("tcp_abort").return?, 
+      kernel.function("tcp_listen").return? {
   sock = $return
   if (sock != 0)
   { 
