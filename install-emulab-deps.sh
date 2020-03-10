@@ -13,7 +13,7 @@ EOF
 sudo apt update
 sudo apt install -y linux-image-$(uname -r)-dbgsym libdw-dev libboost-all-dev python3-dev python3-pip python-pip python-dev
 sudo apt clean
-sudo pip3 install sklearn numpy pandas
+sudo pip3 install sklearn==0.22.2 numpy pandas
 
 # Patch and build Systemtap
 git clone git://sourceware.org/git/systemtap.git
