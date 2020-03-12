@@ -1,6 +1,7 @@
 #ifndef LEADER_SESSION_H
 #define LEADER_SESSION_H
 
+#include "tbb/concurrent_unordered_map.h"
 #include <boost/interprocess/ipc/message_queue.hpp>
 #include <boost/process.hpp>
 #include <cstdio>
@@ -10,7 +11,6 @@
 #include <string>
 #include <thread>
 #include <unistd.h>
-#include "tbb/concurrent_unordered_map.h"
 
 /**
  * The Connection class stores system calls related to a single connection.
@@ -39,13 +39,17 @@ private:
   std::thread t_scanner;
   std::thread msg_push;
 
-  // We change this to a single map of connections since we're tracking in real time
-  tbb::concurrent_unordered_map<unsigned int, tbb::concurrent_unordered_map<unsigned int, Connection>> conns;
+  // We change this to a single map of connections since we're tracking in real
+  // time
+  tbb::concurrent_unordered_map<
+      unsigned int, tbb::concurrent_unordered_map<unsigned int, Connection>>
+      conns;
   boost::process::ipstream stap_out;
   boost::process::child stap_process;
 
   void scan(std::istream *in);
   void push();
+
 public:
   Session();
   ~Session();

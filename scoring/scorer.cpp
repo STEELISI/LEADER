@@ -13,12 +13,12 @@ int Model::analyze_conn(const std::string &in) {
   PyTuple_SetItem(conn, 0, PyBytes_FromString(in.c_str()));
   PyTuple_SetItem(conn, 1, ml_model);
 
- // PyObject *ret = PyObject_CallObject(test_func, conn);
- // int r = PyNumber_Check(ret);
+  // PyObject *ret = PyObject_CallObject(test_func, conn);
+  // int r = PyNumber_Check(ret);
 
   PyObject *ret = PyObject_CallObject(test_func, conn);
   int r = static_cast<int>(PyLong_AsLong(ret));
-  std::cout <<"\n\nSCORE: "<< r << " for conn: " << in.c_str();
+  std::cout << "\n\nSCORE: " << r << " for conn: " << in.c_str();
 
   Py_XDECREF(conn);
   Py_XDECREF(ret);
@@ -40,9 +40,9 @@ Model::~Model() {
 Model::Model(const std::string &load) {
   Py_Initialize();
 
-  PyRun_SimpleString ("import sys");
-  PyRun_SimpleString ("import os");
-  PyRun_SimpleString ("sys.path.append(os.getcwd())");
+  PyRun_SimpleString("import sys");
+  PyRun_SimpleString("import os");
+  PyRun_SimpleString("sys.path.append(os.getcwd())");
   PyObject *module = PyImport_Import(PyUnicode_DecodeFSDefault("scoring.ml"));
 
   load_func = PyObject_GetAttrString(module, "load_model");
