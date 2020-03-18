@@ -9,6 +9,7 @@ class mitigator {
 private:
   boost::process::child mitigator_process;
   std::ofstream writer;
+
 public:
   mitigator();
   ~mitigator();

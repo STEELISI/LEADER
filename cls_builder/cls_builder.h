@@ -1,35 +1,27 @@
 #ifndef LEADER_SESSION_H
 #define LEADER_SESSION_H
 
+#include "tbb/concurrent_unordered_map.h"
 #include <boost/interprocess/ipc/message_queue.hpp>
 #include <boost/process.hpp>
 #include <cstdio>
 #include <memory>
+#include <mutex>
+#include <set>
 #include <string>
 #include <thread>
 #include <unistd.h>
-#include <unordered_map>
-#include <vector>
-
-/**
- * The Call class stores a single system call and data related to it.
- */
-struct Call {
-  std::string syscall_name;
-  int page_faults;
-  int descriptors;
-  int mem_alloc;
-  int call_time;
-  long long timestamp;
-};
 
 /**
  * The Connection class stores system calls related to a single connection.
  */
 struct Connection {
-  std::vector<Call> syscall_list;
-  int port = -1, tid = -1, pid = -1;
+  tbb::concurrent_unordered_map<std::string, unsigned int> syscall_list_count;
+  tbb::concurrent_unordered_map<std::string, long long> syscall_list_time;
+  unsigned int port = -1, tid = -1, pid = -1;
+  long long prev = 0;
   std::string ip_addr;
+
   Connection() = default;
   std::string toString();
 };
@@ -41,27 +33,26 @@ struct Connection {
  */
 class Session {
 private:
-  std::thread t_scanner;
+  std::set<std::string> useful_calls;
 
-  std::unordered_map<std::string,
-                     std::unordered_map<int, std::vector<Connection *>>>
-      connections;
-  std::unordered_map<int, std::unordered_map<int, std::vector<Connection>>>
+  boost::interprocess::message_queue *mq = nullptr;
+  std::thread t_scanner;
+  std::thread msg_push;
+
+  // We change this to a single map of connections since we're tracking in real
+  // time
+  tbb::concurrent_unordered_map<
+      unsigned int, tbb::concurrent_unordered_map<unsigned int, Connection>>
       conns;
   boost::process::ipstream stap_out;
   boost::process::child stap_process;
 
-public:
-  boost::interprocess::message_queue *mq = nullptr;
   void scan(std::istream *in);
+  void push();
 
+public:
   Session();
   ~Session();
-
-  std::vector<int> get_connection_ports(const std::string &ip);
-  std::vector<Connection> get_connection(const std::string &ip, int port);
-  int get_size();
-  void remove_conn(Connection *c);
 };
 
 #endif
