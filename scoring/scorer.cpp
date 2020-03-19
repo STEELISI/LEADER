@@ -13,12 +13,10 @@ int Model::analyze_conn(const std::string &in) {
   PyTuple_SetItem(conn, 0, PyBytes_FromString(in.c_str()));
   PyTuple_SetItem(conn, 1, ml_model);
 
-  // PyObject *ret = PyObject_CallObject(test_func, conn);
-  // int r = PyNumber_Check(ret);
 
   PyObject *ret = PyObject_CallObject(test_func, conn);
   int r = static_cast<int>(PyLong_AsLong(ret));
-  std::cout <<"\n\nSCORE: "<< r << " for conn: " << in.c_str() << std::endl;
+  std::cout <<"\n\nSCORE: "<< r << " for conn: " << in.c_str();
 
   Py_XDECREF(conn);
   Py_XDECREF(ret);

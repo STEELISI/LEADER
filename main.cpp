@@ -49,29 +49,32 @@ int main(int argc, char *argv[]) {
     if (conn[0] != 0) {
       char conn_ex[4096];
       char ip[16];
-      int j = 0;
-      for (int i = 0; i < 4096; i++) {
-        if (conn[i] != '|' && conn_flag == 0)
-          conn_ex[i] = conn[i];
-        else {
-          if (conn[i] == '|') {
-            conn_ex[i] = '\0';
-            conn_flag = 1;
-          } else if (conn[i] != '$') {
-            ip[j] = conn[i];
-            j++;
-          } else {
-            ip[j] = '\0';
-            break;
-          }
-        }
+      int j=0;
+      for(int i=0;i<4096;i++) {
+	      if(conn[i] != '|' && conn_flag == 0)
+	        conn_ex[i] = conn[i];
+	      else {
+		if(conn[i] == '|')      
+		{ conn_ex[i] = '\0';
+		  conn_flag = 1;
+		}	
+		else if(conn[i] != '$')
+		{
+                  ip[j] = conn[i];
+		  j++;
+		}
+	        else
+		{	
+		     ip[j] = '\0';
+		      break;
+		}
+	      }
       }
-      std::string empty("0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"
-                        "0,0,0,0,0,0,0,0,0,1\0");
-      std::string connectionstr(conn_ex);
-      if (empty.compare(conn_ex)) {
-        std::cout << "Connection: " << conn_ex << " "
-                  << model.analyze_conn(conn_ex) << " IP " << ip << std::endl;
+      std::string  empty("0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1\0");
+      std::string  connectionstr(conn_ex);
+      if(empty.compare(conn_ex))
+      {	      
+      std::cout <<"Connection: "<< conn_ex <<" "<< model.analyze_conn(conn_ex) <<" IP "<<ip << std::endl;
       }
     } else
       std::cout << "nullptr conn" << std::endl;
