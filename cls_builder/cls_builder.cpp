@@ -91,7 +91,8 @@ void Session::scan(std::istream *in) {
 
       //std::cout << "Line: " << line << std::endl;
       // Call to add to a connection
-      unsigned int this_pid = -1, conn_port = -1, this_tid = -1;
+      unsigned int this_pid = -1, this_tid = -1;
+      int conn_port = -1;
       long long this_time = 0;
       bool has_port = false;
       std::string ip, call;
@@ -156,6 +157,10 @@ void Session::scan(std::istream *in) {
 	  if(ip_flag == 1)
           {		  
 	  	c.ip_addr = ip;
+		if(conn_port > 0)
+                {
+                  c.port = conn_port;
+                }		  
 	  }
         }
 
@@ -177,14 +182,16 @@ void Session::scan(std::istream *in) {
             // Set new count and time for this call
             if (c->syscall_list_count.find(call) == c->syscall_list_count.end()){
               //if(strcmp("sockfd_lookup_light",call) == 0)
-	      if((!(sockfd_lookup_light.compare(call)) && c->syscall_list_count.size() ==  0) || c->syscall_list_count.size() > 0 || (!(sockname.compare(call)) && c->syscall_list_count.size() ==  0))
+	      if((!(sockfd_lookup_light.compare(call)) /*&& c->syscall_list_count.size() ==  0*/) || c->syscall_list_count.size() > 0 || (!(sockname.compare(call)) /*&& c->syscall_list_count.size() ==  0*/))
               {
-	      if(!(sockfd_lookup_light.compare(call)) && c->syscall_list_count.size() ==  0 || (!(sockname.compare(call)) && c->syscall_list_count.size() ==  0))
+	      if(!(sockfd_lookup_light.compare(call)) /*&& c->syscall_list_count.size() ==  0*/ || (!(sockname.compare(call)) /*&& c->syscall_list_count.size() ==  0*/))
 	      {
 	      c->syscall_list_count.clear();
               c->syscall_list_time.clear();
 	      c->prev = 0;
 	      c->ip_addr = "";
+              c->port = 0;
+	      c->prev = 0;
 
               }	      
               std::cout << "LMN1: " << line << std::endl;		      
@@ -196,16 +203,57 @@ void Session::scan(std::istream *in) {
 	      if(ip_flag == 1)
               {		      
 	      c->ip_addr = ip;
+
+                if(conn_port > 0)
+                {
+                  c->port = conn_port;
+                }
+
+
 	      }
 	      
             } else {
+	     
+              if(!(sockfd_lookup_light.compare(call)) /*&& c->syscall_list_count.size() ==  0*/ || (!(sockname.compare(call)) /*&& c->syscall_list_count.size() ==  0*/))
+              {
+              c->syscall_list_count.clear();
+              c->syscall_list_time.clear();
+              c->prev = 0;
+              c->ip_addr = "";
+              c->port = 0;
+              c->prev = 0;
+              std::cout << "LMN1: " << line << std::endl;
+              c->syscall_list_count.insert({call, 1});
+              long long diff = (c->prev == 0) ? 0 : (this_time - c->prev);
+              c->syscall_list_time.insert({call,diff});
+              c->prev = this_time;
+               
+              if(ip_flag == 1)
+              { 
+              c->ip_addr = ip;
 
+                if(conn_port > 0)
+                {
+                  c->port = conn_port;
+                }
+
+
+              }
+              } 
+              else{
               c->syscall_list_count.at(call) += 1;
-              c->syscall_list_time.at(call) += (this_time - c->prev);
+              long long diff = (c->prev == 0) ? 0 : (this_time - c->prev);
+              c->syscall_list_time.at(call) += (diff);
 	      c->prev = this_time;
 	      if(ip_flag == 1){		      
 	      c->ip_addr = ip;
+                if(conn_port > 0)
+                {
+                  c->port = conn_port;
+                }
+
 	      }
+             }
             }
            if(c->syscall_list_count.find("SyS_shutdown") != c->syscall_list_count.end() || c->syscall_list_count.find("sock_destroy_inode") != c->syscall_list_count.end() || c->syscall_list_count.find("__sock_release")!= c->syscall_list_count.end() || c->syscall_list_count.find("sock_close")!= c->syscall_list_count.end() )
             {
@@ -215,6 +263,7 @@ void Session::scan(std::istream *in) {
               c->port = -1;
               c->ip_addr = "";
               c->prev = 0;
+              c->port = 0;
             } 
           }
         } else {
@@ -232,6 +281,11 @@ void Session::scan(std::istream *in) {
 	    }
 	    if(ip_flag == 1){
 	    c.ip_addr = ip;
+                if(conn_port > 0)
+                {
+                  c.port = conn_port;
+                }
+
 	    }
           }
 
@@ -311,6 +365,8 @@ std::string Connection::toString() {
 
   ret1.append("1|");
   ret1.append(ip_addr);
+  ret1.append(":");
+  ret1.append(std::to_string(port));
   ret1.append("$\0");
 
   //ret2.back() = '|';
