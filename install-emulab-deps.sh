@@ -11,7 +11,7 @@ deb http://ddebs.ubuntu.com/ ${codename}-proposed main restricted universe multi
 EOF
 
 sudo apt update
-sudo apt install -y "linux-image-$(uname -r)-dbgsym libdw-dev libboost-all-dev python3-dev python3-pip python-pip python-dev"
+sudo apt install -y "linux-image-$(uname -r)-dbgsym" libdw-dev libboost-all-dev python3-dev python3-pip python-pip python-dev
 sudo apt clean
 sudo pip3 install scikit-learn==0.22.2 numpy pandas
 
