@@ -125,6 +125,14 @@ int main(int argc, char *argv[]) {
       {	
           return_val = model.analyze_conn(conn_ex);	      
           std::cout <<"Connection: "<< conn_ex <<" "<< return_val <<" IP "<<ip <<":"<<port<< std::endl;
+	  if(return_val > -1)
+          {
+            char* c = &ip[0];
+             if (inet_pton(AF_INET, c, &ip_addr) != 0) {
+		     std::cout <<"\nBlacklisting IP "<<ip<<" "<<ip_addr<<std::endl;
+                     blacklistIP(ip_addr);
+             }
+          }		  
       }
     } else
       std::cout << "nullptr conn" << std::endl;
