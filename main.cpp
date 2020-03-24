@@ -1,11 +1,13 @@
 #include "cls_builder/cls_builder.h"
 #include "scoring/scorer.h"
+#include <unordered_set>
 #include <iostream>
 #include <signal.h>
 #include <string>
 #include <fstream>
 
 std::string blacklistpipe("/tmp/blacklistpipe");
+std::unordered_set<unsigned int> blacklist;
 std::ofstream piper;
 
 void handle_sigint(int s) {
@@ -13,6 +15,21 @@ void handle_sigint(int s) {
   std::cout << "Exiting!" << std::endl;
   exit(1);
 }
+
+void blacklistIP(unsigned int userIP) {
+  bool ok = blacklist.insert(userIP).second;
+  std::cout<<std::endl<<" Blacklist "<<ok;
+  struct timeval t;
+  gettimeofday (&t, NULL);
+  if (ok)
+    {
+      std::cout << "Put into pipe " << userIP << " time " << t.tv_sec <<std::endl;
+      std::string l= std::to_string(userIP);
+      std::cout<<std::endl<<l<<std::endl;
+      piper << l + "\n" << std::flush;
+    }
+}
+
 
 /**
  * Main method. The connections are stored in sess, and all data can be accessed
