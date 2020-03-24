@@ -77,10 +77,15 @@ int main(int argc, char *argv[]) {
 
     // If message is readable analyze and output result
     int conn_flag = 0;
+    int ip_flag =0;
     if (conn[0] != 0) {
+      unsigned int ip_addr;
+      int return_val;
       char conn_ex[4096];
       char ip[16];
+      char port[6];
       int j=0;
+      int k = 0;
       for(int i=0;i<4096;i++) {
 	      if(conn[i] != '|' && conn_flag == 0)
 	        conn_ex[i] = conn[i];
@@ -88,24 +93,38 @@ int main(int argc, char *argv[]) {
 		if(conn[i] == '|')      
 		{ conn_ex[i] = '\0';
 		  conn_flag = 1;
-		}	
+		}
+		else if(conn[i] != ':' && ip_flag == 0 )
+		{
+                   ip[j] = conn[i];
+		   j++;
+		}
+	        else
+		{
+                if(conn[i] == ':')
+	        {
+	          ip_flag = 1;
+                  ip[j] = '\0';		  
+                }
 		else if(conn[i] != '$')
 		{
-                  ip[j] = conn[i];
-		  j++;
+                  port[k] = conn[i];
+		  k++;
 		}
 	        else
 		{	
-		     ip[j] = '\0';
+		     port[k] = '\0';
 		      break;
+		}
 		}
 	      }
       }
       std::string  empty("0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1\0");
       std::string  connectionstr(conn_ex);
       if(empty.compare(conn_ex))
-      {	      
-      std::cout <<"Connection: "<< conn_ex <<" "<< model.analyze_conn(conn_ex) <<" IP "<<ip << std::endl;
+      {	
+          return_val = model.analyze_conn(conn_ex);	      
+          std::cout <<"Connection: "<< conn_ex <<" "<< return_val <<" IP "<<ip <<":"<<port<< std::endl;
       }
     } else
       std::cout << "nullptr conn" << std::endl;
