@@ -5,9 +5,8 @@
 #include <string>
 #include <fstream>
 
-std::string blacklistpipe;
+std::string blacklistpipe("/tmp/blacklistpipe");
 std::ofstream piper;
-
 
 void handle_sigint(int s) {
   std::cout << "Caught signal: " << s << std::endl;
@@ -28,10 +27,19 @@ int main(int argc, char *argv[]) {
   // Create ML model from argument
   Model model(argv[1]);
 
+  // Set pipe
+  try {
+         piper.open(blacklistpipe);
+  } catch(std::exception const& e){
+	 std::cout << "PIPE not set. Set it in " << blacklistpipe << ".\n";
+         exit(1);
+  }
+
   // Set up session and message queues
   Session sess;
   boost::interprocess::message_queue mq_data(boost::interprocess::open_only,
                                              "conns");
+
 
   // Set up handler to capture Ctrl-C signals
   struct sigaction sigint_handler;
