@@ -2,6 +2,12 @@
 #include "scoring/scorer.h"
 #include <iostream>
 #include <signal.h>
+#include <string>
+#include <fstream>
+
+std::string blacklistpipe;
+std::ofstream piper;
+
 
 void handle_sigint(int s) {
   std::cout << "Caught signal: " << s << std::endl;
