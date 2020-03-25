@@ -21,23 +21,27 @@ probe netfilter.ip.local_out {
   connect[tid()] = 1
 }
 
+
 probe netfilter.ip.local_out {
   ip[tid()] = saddr
   p[tid()] = sport
   connect[tid()] = 1
 }
 
+/*
 probe tcp.sendmsg {
   ip[tid()] = daddr
   p[tid()] = dport
   connect[tid()] = 1
 }
 
+
 probe tcp.receive, tcp.recvmsg {
   ip[tid()] = saddr
   p[tid()] = sport
   connect[tid()] = 1
 }
+*/
 
 // We probe each TCP connection whenever accept() call occurs
 probe kernel.function("tcp_accept").return?,
