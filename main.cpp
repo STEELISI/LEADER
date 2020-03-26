@@ -78,14 +78,17 @@ int main(int argc, char *argv[]) {
     // If message is readable analyze and output result
     int conn_flag = 0;
     int ip_flag =0;
+    int port_flag =0;
     if (conn[0] != 0) {
       unsigned int ip_addr;
       int return_val;
       char conn_ex[4096];
       char ip[16];
       char port[6];
+      char start_time[11];
       int j=0;
       int k = 0;
+      int l = 0;
       for(int i=0;i<4096;i++) {
 	      if(conn[i] != '|' && conn_flag == 0)
 	        conn_ex[i] = conn[i];
@@ -106,15 +109,27 @@ int main(int argc, char *argv[]) {
 	          ip_flag = 1;
                   ip[j] = '\0';		  
                 }
-		else if(conn[i] != '$')
+		else if(conn[i] != '=' && port_flag == 0)
 		{
                   port[k] = conn[i];
 		  k++;
 		}
 	        else
-		{	
-		     port[k] = '\0';
+		{ 
+		   if(conn[i] == '=')	
+		   { port[k] = '\0';
+	             port_flag = 1;		     
+	           }
+		   else if(conn[i] != '$')
+	           {
+		     start_time[l] = conn[i];
+	             l++;
+	           }
+                   else
+	           {		   
+                     start_time[l] = '\0';
 		      break;
+		   }
 		}
 		}
 	      }
@@ -124,13 +139,18 @@ int main(int argc, char *argv[]) {
       if(empty.compare(conn_ex))
       {	
           return_val = model.analyze_conn(conn_ex);	      
-          std::cout <<"Connection: "<< conn_ex <<" "<< return_val <<" IP "<<ip <<":"<<port<< std::endl;
-	  if(return_val > -1)
+          std::cout <<"Connection: "<< conn_ex <<" "<< return_val <<" IP "<<ip <<":"<<port<<" = " << start_time << std::endl;
+	  if(return_val == -1)
           {
             char* c = &ip[0];
+	    int st = atoi(start_time);
              if (inet_pton(AF_INET, c, &ip_addr) != 0) {
 		     std::cout <<"\nBlacklisting IP "<<ip<<" "<<ip_addr<<std::endl;
                      blacklistIP(ip_addr);
+		     struct timeval t;
+		     gettimeofday (&t, NULL);
+		     int dur = t.tv_sec - st;
+		     std::cout <<"\nBlacklisted IP "<<ip<<" "<<ip_addr<<" in "<<dur<<" seconds "<<std::endl;
              }
           }		  
       }
