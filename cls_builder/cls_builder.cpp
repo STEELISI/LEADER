@@ -153,6 +153,8 @@ void Session::scan(std::istream *in) {
           c.syscall_list_count.insert({call, 1});
           c.syscall_list_time.insert({call, 0});
 	  c.prev = this_time;
+	  c.first_timestamp = this_time / 1000000;
+	  std::cout << "\nFIRST: "<<c.first_timestamp<<"\n";
 	  }
 	  if(ip_flag == 1)
           {		  
@@ -192,6 +194,7 @@ void Session::scan(std::istream *in) {
 	      c->ip_addr = "";
               c->port = 0;
 	      c->prev = 0;
+	      c->first_timestamp = -1;
 
               }	      
               std::cout << "LMN1: " << line << std::endl;		      
@@ -199,6 +202,7 @@ void Session::scan(std::istream *in) {
               long long diff = (c->prev == 0) ? 0 : (this_time - c->prev);
               c->syscall_list_time.insert({call,diff});
 	      c->prev = this_time;
+	      c->first_timestamp = this_time / 1000000;
 	      }
 	      if(ip_flag == 1)
               {		      
@@ -222,6 +226,7 @@ void Session::scan(std::istream *in) {
               c->ip_addr = "";
               c->port = 0;
               c->prev = 0;
+	      c->first_timestamp = -1;
               std::cout << "LMN1: " << line << std::endl;
               c->syscall_list_count.insert({call, 1});
               long long diff = (c->prev == 0) ? 0 : (this_time - c->prev);
@@ -278,6 +283,8 @@ void Session::scan(std::istream *in) {
             c.syscall_list_count.insert({call, 1});
             c.syscall_list_time.insert({call, 0});
 	    c.prev = this_time;
+	    c.first_timestamp = this_time / 1000000;
+	    std::cout << "\nFIRST: "<<c.first_timestamp<<"\n";
 	    }
 	    if(ip_flag == 1){
 	    c.ip_addr = ip;
@@ -367,6 +374,8 @@ std::string Connection::toString() {
   ret1.append(ip_addr);
   ret1.append(":");
   ret1.append(std::to_string(port));
+  ret1.append("=");
+  ret1.append(std::to_string(first_timestamp));
   ret1.append("$\0");
 
   //ret2.back() = '|';
