@@ -1,0 +1,5 @@
+======================================
+HOW TO RUN
+======================================
+i=1
+sudo python src/main.py <server-name>  -cf attackerIPs/1000/IPs_for_att_$i
