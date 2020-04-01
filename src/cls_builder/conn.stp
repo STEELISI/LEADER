@@ -70,7 +70,7 @@ probe kernel.function("tcp_accept").return?,
 // and the syscall itself. If there is an active connection at this time, we also show
 // the remote IP and port. When the connection closes, we clear all values related to
 // the conenction so we can get accurate per-connection statistics.
-probe kernel.function("*@net/socket.c").return {
+probe kernel.function("*@net/socket.c").call {
   if(execname() == "apache2") {
     if(connect[tid()] == 1)
       printf("%s,%d,%d,%d,%s,%d\n", ppfunc(), gettimeofday_us(), tid(), pid(), ip[tid()], p[tid()])
