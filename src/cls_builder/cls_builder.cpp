@@ -1,23 +1,16 @@
 #include "cls_builder.h"
-#include <boost/tokenizer.hpp>
 #include <arpa/inet.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#include <boost/tokenizer.hpp>
 #include <chrono>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <exception>
 #include <iostream>
 #include <regex>
 
 // enum for the CSV inputs made by SystemTap
-enum CSV {
-  func,
-  timestamp,
-  tid,
-  pid,
-  addr,
-  port
-};
+enum CSV { func, timestamp, tid, pid, addr, port };
 
 /**
  * The constructor spins off a new thread and runs start_stap() on that thread
@@ -25,8 +18,11 @@ enum CSV {
 Session::Session() {
   // Initialize message queue
   boost::interprocess::message_queue::remove("conns");
-  mq = new boost::interprocess::message_queue(
-      boost::interprocess::create_only, "conns", 100, 4096);
+  mq = new boost::interprocess::message_queue(boost::interprocess::create_only,
+                                              "conns", 100, 4096);
+
+  // Enable hugepages for scalable allocator
+  scalable_allocation_mode(TBBMALLOC_USE_HUGE_PAGES, 1);
 
   // Set up useful_calls with syscalls we wanna record
   useful_calls.insert("sock_poll");
@@ -79,17 +75,18 @@ Session::~Session() {
  */
 void Session::scan(std::istream *in) {
   std::string line;
-  //std::string sockfd_lookup_light ("sockfd_lookup_light");
+  // std::string sockfd_lookup_light ("sockfd_lookup_light");
   std::string sockfd_lookup_light("SYSC_accept4");
   std::string sockname("SYSC_getsockname");
-  std::regex csv_match("((?:[a-zA-Z0-9_]*))(,)(\\d+)(,)(\\d+)(,)(\\d+)(,)(.*?)(,)(.*?)");
+  std::regex csv_match(
+      R"(((?:[a-zA-Z0-9_]*))(,)(\d+)(,)(\d+)(,)(\d+)(,)(.*?)(,)(.*?))");
 
   while (std::getline(*in, line)) {
     // Only match if it is a data line and not extra stuff
     std::cout << "Line: " << line << std::endl;
     if (std::regex_match(line, csv_match)) {
 
-      //std::cout << "Line: " << line << std::endl;
+      // std::cout << "Line: " << line << std::endl;
       // Call to add to a connection
       unsigned int this_pid = -1, this_tid = -1;
       int conn_port = -1;
@@ -104,7 +101,8 @@ void Session::scan(std::istream *in) {
           line, boost::escaped_list_separator<char>('\\', ',', '\"'));
 
       // Turn the line info into actual data
-      for (boost::tokenizer<boost::escaped_list_separator<char>>::iterator i(tk.begin());
+      for (boost::tokenizer<boost::escaped_list_separator<char>>::iterator i(
+               tk.begin());
            i != tk.end(); ++i) {
         if (count == func)
           call = *i;
@@ -129,7 +127,6 @@ void Session::scan(std::istream *in) {
                 std::cout << "IP ADDRESS: " << ip << std::endl;
               }
             }
-
           }
           has_port = true;
         } else if (count == port && *i != "-1") {
@@ -146,24 +143,22 @@ void Session::scan(std::istream *in) {
 
         // Only increment call if it's useful
         if (useful_calls.find(call) != useful_calls.end()) {
-          //if(strcmp("sockfd_lookup_light",call) == 0)
-	  if(!(sockfd_lookup_light.compare(call)) || !(sockname.compare(call)))
-          {
-          std::cout << "LMN: " << line << std::endl;
-          c.syscall_list_count.insert({call, 1});
-          c.syscall_list_time.insert({call, 0});
-	  c.prev = this_time;
-	  c.first_timestamp = this_time / 1000000;
-	  std::cout << "\nFIRST: "<<c.first_timestamp<<"\n";
-	  }
-	  if(ip_flag == 1)
-          {		  
-	  	c.ip_addr = ip;
-		if(conn_port > 0)
-                {
-                  c.port = conn_port;
-                }		  
-	  }
+          // if(strcmp("sockfd_lookup_light",call) == 0)
+          if (!(sockfd_lookup_light.compare(call)) ||
+              !(sockname.compare(call))) {
+            std::cout << "LMN: " << line << std::endl;
+            c.syscall_list_count.insert({call, 1});
+            c.syscall_list_time.insert({call, 0});
+            c.prev = this_time;
+            c.first_timestamp = this_time / 1000000;
+            std::cout << "\nFIRST: " << c.first_timestamp << "\n";
+          }
+          if (ip_flag == 1) {
+            c.ip_addr = ip;
+            if (conn_port > 0) {
+              c.port = conn_port;
+            }
+          }
         }
 
         // Create a TID entry...
@@ -182,94 +177,96 @@ void Session::scan(std::istream *in) {
             auto c = &pid_map->at(this_tid);
 
             // Set new count and time for this call
-            if (c->syscall_list_count.find(call) == c->syscall_list_count.end()){
-              //if(strcmp("sockfd_lookup_light",call) == 0)
-	      if((!(sockfd_lookup_light.compare(call)) /*&& c->syscall_list_count.size() ==  0*/) || c->syscall_list_count.size() > 0 || (!(sockname.compare(call)) /*&& c->syscall_list_count.size() ==  0*/))
-              {
-	      if(!(sockfd_lookup_light.compare(call)) /*&& c->syscall_list_count.size() ==  0*/ || (!(sockname.compare(call)) /*&& c->syscall_list_count.size() ==  0*/))
-	      {
-	      c->syscall_list_count.clear();
-              c->syscall_list_time.clear();
-	      c->prev = 0;
-	      c->ip_addr = "";
-              c->port = 0;
-	      c->prev = 0;
-	      c->first_timestamp = -1;
-
-              }	      
-              std::cout << "LMN1: " << line << std::endl;		      
-              c->syscall_list_count.insert({call, 1});
-              long long diff = (c->prev == 0) ? 0 : (this_time - c->prev);
-              c->syscall_list_time.insert({call,diff});
-	      c->prev = this_time;
-	      c->first_timestamp = this_time / 1000000;
-	      }
-	      if(ip_flag == 1)
-              {		      
-	      c->ip_addr = ip;
-
-                if(conn_port > 0)
-                {
-                  c->port = conn_port;
+            if (c->syscall_list_count.find(call) ==
+                c->syscall_list_count.end()) {
+              // if(strcmp("sockfd_lookup_light",call) == 0)
+              if ((!(sockfd_lookup_light.compare(
+                      call)) /*&& c->syscall_list_count.size() ==  0*/) ||
+                  c->syscall_list_count.size() > 0 ||
+                  (!(sockname.compare(
+                      call)) /*&& c->syscall_list_count.size() ==  0*/)) {
+                if (!(sockfd_lookup_light.compare(
+                        call)) /*&& c->syscall_list_count.size() ==  0*/
+                    || (!(sockname.compare(
+                           call)) /*&& c->syscall_list_count.size() ==  0*/)) {
+                  c->syscall_list_count.clear();
+                  c->syscall_list_time.clear();
+                  c->prev = 0;
+                  c->ip_addr = "";
+                  c->port = 0;
+                  c->prev = 0;
+                  c->first_timestamp = -1;
                 }
-
-
-	      }
-	      
-            } else {
-	     
-              if(!(sockfd_lookup_light.compare(call)) /*&& c->syscall_list_count.size() ==  0*/ || (!(sockname.compare(call)) /*&& c->syscall_list_count.size() ==  0*/))
-              {
-              c->syscall_list_count.clear();
-              c->syscall_list_time.clear();
-              c->prev = 0;
-              c->ip_addr = "";
-              c->port = 0;
-              c->prev = 0;
-	      c->first_timestamp = -1;
-              std::cout << "LMN1: " << line << std::endl;
-              c->syscall_list_count.insert({call, 1});
-              long long diff = (c->prev == 0) ? 0 : (this_time - c->prev);
-              c->syscall_list_time.insert({call,diff});
-              c->prev = this_time;
-               
-              if(ip_flag == 1)
-              { 
-              c->ip_addr = ip;
-
-                if(conn_port > 0)
-                {
-                  c->port = conn_port;
-                }
-
-
+                std::cout << "LMN1: " << line << std::endl;
+                c->syscall_list_count.insert({call, 1});
+                long long diff = (c->prev == 0) ? 0 : (this_time - c->prev);
+                c->syscall_list_time.insert({call, diff});
+                c->prev = this_time;
+                c->first_timestamp = this_time / 1000000;
               }
-              } 
-              else{
-              c->syscall_list_count.at(call) += 1;
-              long long diff = (c->prev == 0) ? 0 : (this_time - c->prev);
-              c->syscall_list_time.at(call) += (diff);
-	      c->prev = this_time;
-	      if(ip_flag == 1){		      
-	      c->ip_addr = ip;
-                if(conn_port > 0)
-                {
+              if (ip_flag == 1) {
+                c->ip_addr = ip;
+
+                if (conn_port > 0) {
                   c->port = conn_port;
                 }
+              }
 
-	      }
-             }
+            } else {
+
+              if (!(sockfd_lookup_light.compare(
+                      call)) /*&& c->syscall_list_count.size() ==  0*/
+                  || (!(sockname.compare(
+                         call)) /*&& c->syscall_list_count.size() ==  0*/)) {
+                c->syscall_list_count.clear();
+                c->syscall_list_time.clear();
+                c->prev = 0;
+                c->ip_addr = "";
+                c->port = 0;
+                c->prev = 0;
+                c->first_timestamp = -1;
+                std::cout << "LMN1: " << line << std::endl;
+                c->syscall_list_count.insert({call, 1});
+                long long diff = (c->prev == 0) ? 0 : (this_time - c->prev);
+                c->syscall_list_time.insert({call, diff});
+                c->prev = this_time;
+
+                if (ip_flag == 1) {
+                  c->ip_addr = ip;
+
+                  if (conn_port > 0) {
+                    c->port = conn_port;
+                  }
+                }
+              } else {
+                c->syscall_list_count.at(call) += 1;
+                long long diff = (c->prev == 0) ? 0 : (this_time - c->prev);
+                c->syscall_list_time.at(call) += (diff);
+                c->prev = this_time;
+                if (ip_flag == 1) {
+                  c->ip_addr = ip;
+                  if (conn_port > 0) {
+                    c->port = conn_port;
+                  }
+                }
+              }
             }
-           if(c->syscall_list_count.find("SyS_shutdown") != c->syscall_list_count.end() || c->syscall_list_count.find("sock_destroy_inode") != c->syscall_list_count.end() || c->syscall_list_count.find("__sock_release")!= c->syscall_list_count.end() || c->syscall_list_count.find("sock_close")!= c->syscall_list_count.end() )
-            {
-              mq->send(c->toString().c_str(), c->toString().length(), 0); 
+            if (c->syscall_list_count.find("SyS_shutdown") !=
+                    c->syscall_list_count.end() ||
+                c->syscall_list_count.find("sock_destroy_inode") !=
+                    c->syscall_list_count.end() ||
+                c->syscall_list_count.find("__sock_release") !=
+                    c->syscall_list_count.end() ||
+                c->syscall_list_count.find("sock_close") !=
+                    c->syscall_list_count.end()) {
+              mq->send(c->toString().c_str(), c->toString().length(), 0);
               c->syscall_list_count.clear();
               c->syscall_list_time.clear();
               c->port = -1;
               c->ip_addr = "";
               c->prev = 0;
               c->port = 0;
-            } 
+            }
           }
         } else {
           // TID doesn't exist, create connection and add to pid_map
@@ -277,23 +274,21 @@ void Session::scan(std::istream *in) {
 
           // Only increment call if we deem it useful
           if (useful_calls.find(call) != useful_calls.end()) {
-            if(!(sockfd_lookup_light.compare(call)) || !(sockname.compare(call)))
-            {
-	    std::cout << "LMN2: " << line << std::endl;
-            c.syscall_list_count.insert({call, 1});
-            c.syscall_list_time.insert({call, 0});
-	    c.prev = this_time;
-	    c.first_timestamp = this_time / 1000000;
-	    std::cout << "\nFIRST: "<<c.first_timestamp<<"\n";
-	    }
-	    if(ip_flag == 1){
-	    c.ip_addr = ip;
-                if(conn_port > 0)
-                {
-                  c.port = conn_port;
-                }
-
-	    }
+            if (!(sockfd_lookup_light.compare(call)) ||
+                !(sockname.compare(call))) {
+              std::cout << "LMN2: " << line << std::endl;
+              c.syscall_list_count.insert({call, 1});
+              c.syscall_list_time.insert({call, 0});
+              c.prev = this_time;
+              c.first_timestamp = this_time / 1000000;
+              std::cout << "\nFIRST: " << c.first_timestamp << "\n";
+            }
+            if (ip_flag == 1) {
+              c.ip_addr = ip;
+              if (conn_port > 0) {
+                c.port = conn_port;
+              }
+            }
           }
 
           pid_map->insert({this_tid, c});
@@ -311,9 +306,9 @@ void Session::scan(std::istream *in) {
             // Only link if connection does not have a port yet
             if (c->port == 0) {
               c->port = conn_port;
-	      if(ip_flag == 1){
-              c->ip_addr = ip;
-	      }
+              if (ip_flag == 1) {
+                c->ip_addr = ip;
+              }
             }
           }
         }
@@ -323,7 +318,8 @@ void Session::scan(std::istream *in) {
 }
 
 /**
- * This function pushes all current connections through the msgqueue every second
+ * This function pushes all current connections through the msgqueue every
+ * second
  */
 void Session::push() {
   // run forever
@@ -331,7 +327,8 @@ void Session::push() {
     // loop through each connection
     for (auto conn_list : conns)
       for (auto conn : conn_list.second)
-        mq->send(conn.second.toString().c_str(), conn.second.toString().length(), 0);
+        mq->send(conn.second.toString().c_str(),
+                 conn.second.toString().length(), 0);
 
     // sleep one second after computation
     std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -348,13 +345,12 @@ std::string Connection::toString() {
 
   // Order the vects correctly
   const std::vector<std::string> vect = {
-      "sock_poll", "sock_write_iter", "sockfd_lookup_light",
-      "sock_alloc_inode", "sock_alloc", "sock_alloc_file",
-      "move_addr_to_user", "SYSC_getsockname", "SyS_getsockname",
-      "SYSC_accept4", "sock_destroy_inode", "sock_read_iter",
-      "sock_recvmsg", "sock_sendmsg", "__sock_release",
-      "SyS_accept4", "SyS_shutdown", "sock_close"
-  };
+      "sock_poll",         "sock_write_iter",    "sockfd_lookup_light",
+      "sock_alloc_inode",  "sock_alloc",         "sock_alloc_file",
+      "move_addr_to_user", "SYSC_getsockname",   "SyS_getsockname",
+      "SYSC_accept4",      "sock_destroy_inode", "sock_read_iter",
+      "sock_recvmsg",      "sock_sendmsg",       "__sock_release",
+      "SyS_accept4",       "SyS_shutdown",       "sock_close"};
 
   for (const auto &entry : vect) {
     // Add all freqs
@@ -378,8 +374,8 @@ std::string Connection::toString() {
   ret1.append(std::to_string(first_timestamp));
   ret1.append("$\0");
 
-  //ret2.back() = '|';
-  //ret2.push_back('\0');
+  // ret2.back() = '|';
+  // ret2.push_back('\0');
   return ret2 + ret1;
 }
 

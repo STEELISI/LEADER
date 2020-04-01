@@ -2,6 +2,7 @@
 #define LEADER_SESSION_H
 
 #include "tbb/concurrent_unordered_map.h"
+#include "tbb/scalable_allocator.h"
 #include <boost/interprocess/ipc/message_queue.hpp>
 #include <boost/process.hpp>
 #include <cstdio>
@@ -20,11 +21,11 @@ struct Connection {
   tbb::concurrent_unordered_map<std::string, long long> syscall_list_time;
   unsigned int tid = -1, pid = -1;
   int port = -1;
-  int first_timestamp = -1;
+  long long first_timestamp = -1;
   long long prev = 0;
   std::string ip_addr;
 
-  Connection() = default;
+  Connection();
   std::string toString();
 };
 
@@ -51,6 +52,7 @@ private:
 
   void scan(std::istream *in);
   void push();
+
 public:
   Session();
   ~Session();
