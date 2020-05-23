@@ -27,14 +27,14 @@ cp /proc/kallsyms "/boot/System.map-$(uname -r)"
 
 cd /mnt || exit
 # Get and install CMake
-wget https://github.com/Kitware/CMake/releases/download/v3.17.0-rc1/cmake-3.17.0-rc1-Linux-x86_64.tar.gz
+wget https://github.com/Kitware/CMake/releases/download/v3.17.2/cmake-3.17.2-Linux-x86_64.tar.gz
 tar xvf cmake-3.17.0-rc1-Linux-x86_64.tar.gz
 cd cmake-3.17.0-rc1-Linux-x86_64/ || exit
 rsync -K -a . /usr/local
 
 cd /mnt || exit
 # Get and install TBB
-wget https://github.com/intel/tbb/releases/download/v2020.1/tbb-2020.1-lin.tgz
+wget https://github.com/oneapi-src/oneTBB/releases/download/v2021.1-beta05/oneapi-tbb-2021.1-beta05-lin.tgz
 tar xvf tbb-2020.1-lin.tgz
 rm -rf pstl
 cd tbb || exit
