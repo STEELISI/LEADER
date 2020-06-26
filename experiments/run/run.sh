@@ -1,6 +1,6 @@
-EXP="test"
-DURATION=60
-INT=10
+EXP="exp"
+DURATION=600
+INT=60
 j=0
 
 echo "Starting leg traffic"

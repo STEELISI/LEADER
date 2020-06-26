@@ -1,4 +1,4 @@
-EXP="test"
+EXP="exp"
 j=1
 while [ $j -le $2 ] ; do
 	      echo "Stopping attack on attacker$j "

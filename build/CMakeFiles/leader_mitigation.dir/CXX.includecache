@@ -1,0 +1,20 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/mnt/LEADER/mitigation/mitigator.cpp
+mitigator.h
+/mnt/LEADER/mitigation/mitigator.h
+
+/mnt/LEADER/mitigation/mitigator.h
+boost/process.hpp
+-
+fstream
+-
+string
+-
+
