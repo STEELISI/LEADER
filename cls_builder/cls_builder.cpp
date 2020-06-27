@@ -54,7 +54,7 @@ Session::Session() {
       boost::process::args({"-g", "./cls_builder/conn.stp",
                             "--suppress-handler-errors", "-DMAXMAPENTRIES=8096",
                             "-s4095", "-DINTERRUPTIBLE=0", "-DMAXTRYLOCK=10000",
-                            "-DSTP_OVERLOAD_THRESHOLD=50000000000",
+                            "-DSTP_OVERLOAD_THRESHOLD=50000000000LL",
                             "--suppress-time-limits"}),
       boost::process::std_out > stap_out);
 
