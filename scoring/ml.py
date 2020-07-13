@@ -13,7 +13,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 
-n_features = 7
+n_features = 9
 
 #================================#
 # Load the model                 #
@@ -33,6 +33,8 @@ def test_model(conn, model):
         df = pd.DataFrame(np.array(feature_values).reshape(1,n_features))
         #feature_values = df.as_matrix()
         feature_values = df.values
+        #feature_values = normalize.transform(feature_values)
+        #feature_values = scaler.transform(feature_values)
         output = model.predict(feature_values)
         return output
     return 2

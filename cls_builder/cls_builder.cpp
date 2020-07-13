@@ -222,18 +222,20 @@ void Session::scan(std::istream *in) {
 
 
 	      }
-              if(call.compare("sock_sendmsg") == 0)
+              //if(call.compare("sock_sendmsg") == 0)
+	      if(call.compare("sock_poll") == 0)
 	      {
-		     if( c->last_call.compare("sock_read_iter") == 0)
+		     //if( c->last_call.compare("sock_read_iter") == 0 || c->last_call.compare("sock_write_iter") == 0 || c->last_call.compare("sock_poll") == 0)
+                     if( c->last_call.compare("sock_read_iter") != 0)
 	             {
-                        c->syscall_list_count.insert({seq_read_send, 1000});
-                        c->syscall_list_time.insert({seq_read_send, 1000});			     
+                        c->syscall_list_count.insert({seq_read_send, 1});
+                        c->syscall_list_time.insert({seq_read_send, 1});			     
 
 	             }
                      else
 	             {
-                        c->syscall_list_count.insert({seq_read_send, -1000});
-                        c->syscall_list_time.insert({seq_read_send, -1000});
+                        c->syscall_list_count.insert({seq_read_send, 1000000});
+                        c->syscall_list_time.insert({seq_read_send, 1000000});
 
                      }
 
@@ -284,18 +286,20 @@ void Session::scan(std::istream *in) {
                   c->port = conn_port;
                 }
 
-              if(call.compare("sock_sendmsg") == 0)
+              //if(call.compare("sock_sendmsg") == 0)
+	      if(call.compare("sock_poll") == 0)
               {
-                     if( c->last_call.compare("sock_read_iter") == 0)
+                     //if( c->last_call.compare("sock_read_iter") == 0 || c->last_call.compare("sock_write_iter") == 0 || c->last_call.compare("sock_poll") == 0)
+                     if( c->last_call.compare("sock_read_iter") != 0) 
                      {  
-                        c->syscall_list_count.at(seq_read_send) += 1000;
-                        c->syscall_list_time.at(seq_read_send) += 1000;
+                        c->syscall_list_count.at(seq_read_send) += 1;
+                        c->syscall_list_time.at(seq_read_send) += 1;
 
                      }
                      else
                      { 
-                        c->syscall_list_count.at(seq_read_send) -= 1000;
-                        c->syscall_list_time.at(seq_read_send) -= 1000; 
+                        c->syscall_list_count.at(seq_read_send) += 1000000;
+                        c->syscall_list_time.at(seq_read_send) += 1000000; 
 
                      }
 

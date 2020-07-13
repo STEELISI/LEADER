@@ -30,12 +30,14 @@ Model::~Model() {
   Py_XDECREF(load_func);
   Py_XDECREF(test_func);
   Py_XDECREF(ml_model);
+  //Py_XDECREF(ml_normalization);
+  //Py_XDECREF(ml_standardization);
 }
 
 /**
  * Constructor that loads the PyObjects from consumer/ml.py
  */
-Model::Model(const std::string &load) {
+Model::Model(const std::string &load, const std::string &load_normalization, const std::string &load_standardization) {
   Py_Initialize();
 
   PyRun_SimpleString("import sys");
@@ -48,8 +50,12 @@ Model::Model(const std::string &load) {
 
   PyObject *str = PyTuple_New(1);
   PyTuple_SetItem(str, 0, Py_BuildValue("y#", load.c_str(), load.size()));
+  //PyTuple_SetItem(str, 1, Py_BuildValue("y#", load.c_str(), load.size()));
+  //PyTuple_SetItem(str, 2, Py_BuildValue("y#", load.c_str(), load.size()));
   ml_model = PyObject_CallObject(load_func, str);
 
   Py_XDECREF(str);
   Py_XINCREF(ml_model);
+  //Py_XINCREF(ml_normalization);
+  //Py_XINCREF(ml_standardization);
 }

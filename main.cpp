@@ -36,13 +36,13 @@ void blacklistIP(unsigned int userIP) {
  * through its helper methods.
  */
 int main(int argc, char *argv[]) {
-  if (argc != 2) {
+  if (argc != 4) {
     std::cout << "Usage: leader <model>" << std::endl;
     return 0;
   }
 
   // Create ML model from argument
-  Model model(argv[1]);
+  Model model(argv[1],argv[2],argv[3]);
 
   // Set pipe
   try {
@@ -135,7 +135,8 @@ int main(int argc, char *argv[]) {
 	      }
       }
       //std::string  empty("0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1\0");
-      std::string  empty("0,0,0,0,0,0,1\0");
+      //std::string  empty("0,0,0,0,0,0,1\0");
+      std::string  empty("0,0,0,0,0,0,0,0,1\0");
       std::string  connectionstr(conn_ex);
       if(empty.compare(conn_ex))
       {	
