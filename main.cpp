@@ -42,6 +42,14 @@ int main(int argc, char *argv[]) {
   }
 
   // Create ML model from argument
+  /*const char* extension = ".txt";
+
+  char* name_with_extension;
+  name_with_extension = malloc(strlen(argv[1])+strlen(argv[2])+strlen(argv[3])+4);
+  strcpy(name_with_extension, name);
+  strcat(name_with_extension, extension);
+ */ 
+
   Model model(argv[1],argv[2],argv[3]);
 
   // Set pipe
@@ -141,7 +149,7 @@ int main(int argc, char *argv[]) {
       if(empty.compare(conn_ex))
       {	
           return_val = model.analyze_conn(conn_ex);	      
-          std::cout <<"Connection: "<< conn_ex <<" "<< return_val <<" IP "<<ip <<":"<<port<<" = " << start_time << std::endl;
+          std::cout <<"\n\n\nConnection: "<< conn_ex <<" CLASSIFIED: "<< return_val <<" IP "<<ip <<":"<<port<<" = " << start_time << std::endl<<std::endl;
 	  if(return_val == -1)
           {
             char* c = &ip[0];

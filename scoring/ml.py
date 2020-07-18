@@ -14,12 +14,21 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 
 n_features = 9
+#model = pickle.load(open(location[0], 'rb'))
+#scaler = pickle.load(open(, 'rb'))
+#normalize = pickle.load(open(, 'rb'))
+scaler = pickle.load(open("./standardization.pkl", 'rb'))
+normalize = pickle.load(open("./normalization.pkl", 'rb'))
+
 
 #================================#
 # Load the model                 #
 #================================#
 def load_model(location):
+    #location = location.split(":")
     model = pickle.load(open(location, 'rb'))
+    #scaler = pickle.load(open(location[1], 'rb'))
+    #normalize = pickle.load(open(location[2], 'rb'))
     return model
 
 #===============================#
@@ -29,12 +38,14 @@ def test_model(conn, model):
     #conn = "1987,9,51,13,22,0,10043209,7,7,16,14,32,850,459,17,8,59,5,3,1,3,1,2,0,2,1,1,1,1,4,4,2,1,1,1,1,1"
     feature_values = conn.decode().split(",")
     if(len(feature_values) == n_features):
+        #modl,scaler,normalize = model
+        #print(modl,scaler,normalize)
         feature_values = [int(i) for i in feature_values]
         df = pd.DataFrame(np.array(feature_values).reshape(1,n_features))
         #feature_values = df.as_matrix()
         feature_values = df.values
-        #feature_values = normalize.transform(feature_values)
-        #feature_values = scaler.transform(feature_values)
+        feature_values = normalize.transform(feature_values)
+        feature_values = scaler.transform(feature_values)
         output = model.predict(feature_values)
         return output
     return 2

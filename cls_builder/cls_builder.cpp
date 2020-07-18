@@ -118,6 +118,9 @@ void Session::scan(std::istream *in) {
         else if (count == addr && *i != "-1") {
           ip_flag = 1;
           ip = *i;
+	  if (ip.find("127.0.0.1") != std::string::npos) {
+		  ip_flag = 0;
+	  }
           if (ip.find(':') != std::string::npos) {
             unsigned char buf[sizeof(struct in6_addr)];
             int s;
