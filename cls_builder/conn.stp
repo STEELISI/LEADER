@@ -28,7 +28,7 @@ probe netfilter.ip.local_out {
   connect[tid()] = 1
 }
 
-/*
+
 probe tcp.sendmsg {
   ip[tid()] = daddr
   p[tid()] = dport
@@ -36,12 +36,26 @@ probe tcp.sendmsg {
 }
 
 
-probe tcp.receive, tcp.recvmsg {
+
+probe tcp.receive, tcp.recvmsg, socket.receive, tcp.setsockopt {
+  if(saddr != "0000:0000:0000:0000:0000:ffff:0a01:0102" && saddr != "10.1.1.2" && sport!= 0)
+  {
+  //printf("PP %6d %16s \n",sport,saddr)
   ip[tid()] = saddr
   p[tid()] = sport
   connect[tid()] = 1
+  }
+  else if(daddr != "0000:0000:0000:0000:0000:ffff:0a01:0102" && daddr != "10.1.1.2" && dport!= 0)
+  {
+  //printf("PP %6d %16s \n",dport,daddr)
+  ip[tid()] = daddr
+  p[tid()] = dport 
+  connect[tid()] = 1
+
+  }
+
 }
-*/
+
 
 // We probe each TCP connection whenever accept() call occurs
 probe kernel.function("tcp_accept").return?,
@@ -56,8 +70,9 @@ probe kernel.function("tcp_accept").return?,
       kernel.function("tcp_abort").return?, 
       kernel.function("tcp_listen").return? {
   sock = $return
-  if (sock != 0)
+  if (sock != 0 && inet_get_ip_source(sock) != "0000:0000:0000:0000:0000:ffff:0a01:0102")
   { 
+    //printf("DEBUG %6d %16s %6d %6d %16s\n", uid(), execname(), pid(),inet_get_local_port(sock), inet_get_ip_source(sock))
     ip[tid()] = inet_get_ip_source(sock)
     p[tid()] = inet_get_local_port(sock)
     connect[tid()] = 1
@@ -71,7 +86,7 @@ probe kernel.function("tcp_accept").return?,
 // the remote IP and port. When the connection closes, we clear all values related to
 // the conenction so we can get accurate per-connection statistics.
 probe kernel.function("*@net/socket.c").return {
-  if(execname() == "apache2") {
+  if(execname() == "apache2" || execname() == "nginx") {
     if(connect[tid()] == 1)
       printf("%s,%d,%d,%d,%s,%d\n", ppfunc(), gettimeofday_us(), tid(), pid(), ip[tid()], p[tid()])
     else

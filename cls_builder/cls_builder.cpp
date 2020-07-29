@@ -391,7 +391,7 @@ void Session::push() {
         mq->send(conn.second.toString().c_str(), conn.second.toString().length(), 0);
 
     // sleep one second after computation
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 }
 
@@ -420,7 +420,7 @@ std::string Connection::toString() {
   for (const auto &entry : vect) {
     // Add all freqs
     if (syscall_list_count.find(entry) != syscall_list_count.end())
-      ret1 += std::to_string(syscall_list_count.at(entry)) + ",";
+      ret1 += std::to_string(syscall_list_count.at(entry)*syscall_list_count.at(entry)*syscall_list_count.at(entry)) + ",";
     else
       ret1.append("0,");
 
