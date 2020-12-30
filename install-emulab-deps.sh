@@ -16,9 +16,13 @@ sudo apt clean
 sudo pip3 install scikit-learn==0.22.2 numpy pandas
 
 # Patch and build Systemtap
-git clone git://sourceware.org/git/systemtap.git
-cd systemtap || exit
-git checkout release-4.2
+## git clone git://sourceware.org/git/systemtap.git
+## cd systemtap || exit
+## git checkout release-4.2
+
+wget https://sourceware.org/systemtap/ftp/releases/systemtap-4.0.tar.gz
+tar -xvzf systemtap-4.0.tar.gz
+cd systemtap-4.0
 ./configure && make && sudo make install
 cd ../ && sudo rm -rf systemtap-4.0
 
