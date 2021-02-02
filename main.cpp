@@ -10,6 +10,15 @@ std::string blacklistpipe("/tmp/blacklistpipe");
 std::unordered_set<unsigned int> blacklist;
 std::ofstream piper;
 
+// FOR DEBUG PURPOSES
+std::string arr[5000];
+int leg_times[5000];
+int atk_times[5000];
+std::string pt[5000];
+int ip_count = -1;
+//
+
+
 void handle_sigint(int s) {
   std::cout << "Caught signal: " << s << std::endl;
   std::cout << "Exiting!" << std::endl;
@@ -150,6 +159,49 @@ int main(int argc, char *argv[]) {
       {	
           return_val = model.analyze_conn(conn_ex);	      
           std::cout <<"\n\n\nConnection: "<< conn_ex <<" CLASSIFIED: "<< return_val <<" IP "<<ip <<":"<<port<<" = " << start_time << std::endl<<std::endl;
+         
+         // FOR DEBUG PURPOSES
+	 int exists = 0;
+	 int fl = 0; 
+         std::string cur_ip = std::string(ip);
+	 std::string cur_port = std::string(port);
+	 for(int x=0; x<=ip_count; x++)
+	 {
+            if(!(cur_ip.compare(arr[x])) && (cur_port.compare(pt[x])))
+	    {
+                if(return_val == 1)  
+                leg_times[x]++;
+                else if(return_val == -1)
+                atk_times[x]++;
+                pt[x] = cur_port;		
+		fl=1;
+		struct timeval t;
+		std::cout <<"\n\n\n "<<gettimeofday(&t, NULL)<<" STATS: "<<arr[x]<<" "<<leg_times[x]<<" "<<atk_times[x];
+		break;
+            }
+	    struct timeval t;
+	    std::cout <<"\n\n\n "<<gettimeofday(&t, NULL)<<" STATS: "<<arr[x]<<" "<<leg_times[x]<<" "<<atk_times[x];
+	 }	 
+         
+	 if(fl == 0)
+	 {
+             ip_count++;
+             arr[ip_count] = cur_ip;
+             pt[ip_count] = cur_port;
+                if(return_val == 1)
+                {leg_times[ip_count] = 1;
+                 atk_times[ip_count] = 0;
+                }
+                else if(return_val == -1)
+                {
+		 leg_times[ip_count] = 0;
+                 atk_times[ip_count] = 1;
+                }
+	     struct timeval t;
+             std::cout <<"\n\n\n "<<gettimeofday(&t, NULL)<<" STATS: "<<arr[ip_count]<<" "<<leg_times[ip_count]<<" "<<atk_times[ip_count];
+         }		 
+         // FOR DEBUG PURPOSES
+
 	  if(return_val == -1)
           {
             char* c = &ip[0];
