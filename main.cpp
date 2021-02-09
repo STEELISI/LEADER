@@ -167,6 +167,8 @@ int main(int argc, char *argv[]) {
 	 std::string cur_port = std::string(port);
 	 for(int x=0; x<=ip_count; x++)
 	 {
+            if(!(cur_ip.compare(arr[x])))
+	       fl = 2;		    
             if(!(cur_ip.compare(arr[x])) && (cur_port.compare(pt[x])))
 	    {
                 if(return_val == 1)  
@@ -176,11 +178,15 @@ int main(int argc, char *argv[]) {
                 pt[x] = cur_port;		
 		fl=1;
 		struct timeval t;
-		std::cout <<"\n\n\n "<<gettimeofday(&t, NULL)<<" STATS: "<<arr[x]<<" "<<leg_times[x]<<" "<<atk_times[x];
+		gettimeofday(&t, NULL);
+		std::cout <<"\n\n\n "<<t.tv_sec<<" STATS: "<<arr[x]<<" "<<leg_times[x]<<" "<<atk_times[x];
 		break;
             }
+	    //if(fl == 2)
+	    //   break;
 	    struct timeval t;
-	    std::cout <<"\n\n\n "<<gettimeofday(&t, NULL)<<" STATS: "<<arr[x]<<" "<<leg_times[x]<<" "<<atk_times[x];
+	    gettimeofday(&t, NULL);
+	    std::cout <<"\n\n\n "<<t.tv_sec<<" STATS: "<<arr[x]<<" "<<leg_times[x]<<" "<<atk_times[x];
 	 }	 
          
 	 if(fl == 0)
@@ -198,7 +204,8 @@ int main(int argc, char *argv[]) {
                  atk_times[ip_count] = 1;
                 }
 	     struct timeval t;
-             std::cout <<"\n\n\n "<<gettimeofday(&t, NULL)<<" STATS: "<<arr[ip_count]<<" "<<leg_times[ip_count]<<" "<<atk_times[ip_count];
+	     gettimeofday(&t, NULL);
+             std::cout <<"\n\n\n "<<t.tv_sec<<" STATS: "<<arr[ip_count]<<" "<<leg_times[ip_count]<<" "<<atk_times[ip_count];
          }		 
          // FOR DEBUG PURPOSES
 
