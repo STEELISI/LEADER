@@ -4,3 +4,6 @@ sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.tcpdump
 sudo pip3 install netifaces
 sudo pip3 install python-dateutil
 sudo pip3 install shove
+#cd ~/frade/traffic/smart_attacker/
+#sudo bash install
+cd ~/frade//experiments/setup/ip_addrs/; sudo perl assign 10.1.x.x
