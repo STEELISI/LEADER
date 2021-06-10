@@ -1,3 +1,6 @@
+// HOW TO RUN
+// ./build/leader elliptic_envelope.mlmodel normalization.pkl standardization.pkl
+
 #include "cls_builder/cls_builder.h"
 #include "scoring/scorer.h"
 #include <unordered_set>
