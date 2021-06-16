@@ -29,3 +29,9 @@ make
 * Jelena Mirkovic
 * Nicolaas Weideman
 * Rajat Tandon
+
+
+
+## Install PHP 5.3
+https://askubuntu.com/questions/1052746/can-i-install-php-5-3-5-on-ubuntu-server-18-04-lts
+
