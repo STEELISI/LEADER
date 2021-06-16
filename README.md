@@ -20,6 +20,9 @@ cmake ..
 make
 ```
 
+## HOW TO RUN
+./build/leader elliptic_envelope.mlmodel normalization.pkl standardization.pkl
+
 ## Members and Collaborators
 * Haoda Wang
 * Christophe Hauser
