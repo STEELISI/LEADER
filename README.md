@@ -34,4 +34,7 @@ make
 
 ## Install PHP 5.3
 https://askubuntu.com/questions/1052746/can-i-install-php-5-3-5-on-ubuntu-server-18-04-lts
+./configure --with-apxs2
+LoadModule php5_module /usr/lib/apache2/modules/libphp5.so
+https://www.php.net/manual/en/install.unix.apache2.php
 
