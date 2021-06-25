@@ -212,7 +212,9 @@ int main(int argc, char *argv[]) {
          }		 
          // FOR DEBUG PURPOSES
 
-	  if(return_val == -1)
+	  float ans = (float)atk_times[ip_count] / (float)(atk_times[ip_count] + leg_times[ip_count]);
+	  std::cout << "Answer " << ans <<std::endl;
+	  if(ans > 0.1)
           {
             char* c = &ip[0];
 	    int st = atoi(start_time);

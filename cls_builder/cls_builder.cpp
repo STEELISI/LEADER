@@ -153,7 +153,7 @@ void Session::scan(std::istream *in) {
           //if(strcmp("sockfd_lookup_light",call) == 0)
 	  if(!(sockfd_lookup_light.compare(call)) || !(sockname.compare(call)))
           {
-          std::cout << "LMN: " << line << std::endl;
+          //std::cout << "LMN: " << line << std::endl;
           c.syscall_list_count.insert({call, 1});
           c.syscall_list_time.insert({call, 0});
 	  c.syscall_list_count.insert({seq_read_send, 0});
@@ -207,7 +207,7 @@ void Session::scan(std::istream *in) {
               c->syscall_list_time.insert({seq_read_send, 0});
 
               }	      
-              std::cout << "LMN1: " << line << std::endl;		      
+              //std::cout << "LMN1: " << line << std::endl;		      
               c->syscall_list_count.insert({call, 1});
               long long diff = (c->prev == 0) ? 0 : (this_time - c->prev);
               c->syscall_list_time.insert({call,diff});
@@ -260,7 +260,7 @@ void Session::scan(std::istream *in) {
               c->prev = 0;
 	      c->first_timestamp = -1;
 	      c->last_call = "";
-              std::cout << "LMN1: " << line << std::endl;
+              //std::cout << "LMN1: " << line << std::endl;
               c->syscall_list_count.insert({call, 1});
               long long diff = (c->prev == 0) ? 0 : (this_time - c->prev);
               c->syscall_list_time.insert({call,diff});
@@ -333,7 +333,7 @@ void Session::scan(std::istream *in) {
           if (useful_calls.find(call) != useful_calls.end()) {
             if(!(sockfd_lookup_light.compare(call)) || !(sockname.compare(call)))
             {
-	    std::cout << "LMN2: " << line << std::endl;
+	    //std::cout << "LMN2: " << line << std::endl;
             c.syscall_list_count.insert({call, 1});
             c.syscall_list_time.insert({call, 0});
             c.syscall_list_count.insert({seq_read_send, 0});
