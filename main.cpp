@@ -168,10 +168,14 @@ int main(int argc, char *argv[]) {
 	 int fl = 0; 
          std::string cur_ip = std::string(ip);
 	 std::string cur_port = std::string(port);
+         int cur_ip_pos = -1;
+
 	 for(int x=0; x<=ip_count; x++)
 	 {
             if(!(cur_ip.compare(arr[x])))
-	       fl = 2;		    
+	    {   fl = 2;
+                cur_ip_pos = x;
+            }		    
             if(!(cur_ip.compare(arr[x])) && (cur_port.compare(pt[x])))
 	    {
                 if(return_val == 1)  
@@ -211,10 +215,12 @@ int main(int argc, char *argv[]) {
              std::cout <<"\n\n\n "<<t.tv_sec<<" STATS: "<<arr[ip_count]<<" "<<leg_times[ip_count]<<" "<<atk_times[ip_count];
          }		 
          // FOR DEBUG PURPOSES
-
-	  float ans = (float)atk_times[ip_count] / (float)(atk_times[ip_count] + leg_times[ip_count]);
-	  std::cout << "Answer " << ans <<std::endl;
-	  if(ans > 0.1)
+          
+	  if(cur_ip_pos >= 0)
+          {		  
+	  float ans = (float)atk_times[cur_ip_pos] / (float)(atk_times[cur_ip_pos] + leg_times[cur_ip_pos]);
+	 // std::cout <<"Percentage" << ans <<std::endl;
+	  if(ans > 0.1 && (atk_times[cur_ip_pos] + leg_times[cur_ip_pos]) >= 4)
           {
             char* c = &ip[0];
 	    int st = atoi(start_time);
@@ -226,7 +232,8 @@ int main(int argc, char *argv[]) {
 		     int dur = t.tv_sec - st;
 		     std::cout <<"\nBlacklisted IP "<<ip<<" "<<ip_addr<<" in "<<dur<<" seconds "<<std::endl;
              }
-          }		  
+          }
+        } 	  
       }
     } else
       std::cout << "nullptr conn" << std::endl;
