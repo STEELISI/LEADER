@@ -8,6 +8,7 @@
 #include <signal.h>
 #include <string>
 #include <fstream>
+#include <set>
 
 std::string blacklistpipe("/tmp/blacklistpipe");
 std::unordered_set<unsigned int> blacklist;
@@ -17,7 +18,8 @@ std::ofstream piper;
 std::string arr[5000];
 int leg_times[5000];
 int atk_times[5000];
-std::string pt[5000];
+std::set<std::string> pt[5000];
+//std::string pt[5000];
 int ip_count = -1;
 //
 
@@ -96,6 +98,7 @@ int main(int argc, char *argv[]) {
     std::cout << "recieved message" << std::endl;
 
     // If message is readable analyze and output result
+    int cflag = 0;
     int conn_flag = 0;
     int ip_flag =0;
     int port_flag =0;
@@ -136,11 +139,13 @@ int main(int argc, char *argv[]) {
 		}
 	        else
 		{ 
+		   if(conn[i] == 'C')
+			cflag = 1;
 		   if(conn[i] == '=')	
 		   { port[k] = '\0';
 	             port_flag = 1;		     
 	           }
-		   else if(conn[i] != '$')
+		   else if(conn[i] != '$' && conn[i] != 'C')
 	           {
 		     start_time[l] = conn[i];
 	             l++;
@@ -175,14 +180,15 @@ int main(int argc, char *argv[]) {
             if(!(cur_ip.compare(arr[x])))
 	    {   fl = 2;
                 cur_ip_pos = x;
-            }		    
-            if(!(cur_ip.compare(arr[x])) && (cur_port.compare(pt[x])))
+            }		   
+	    std::set<std::string>::iterator it = pt[x].find(cur_port); 
+            if(!(cur_ip.compare(arr[x])) && (it == pt[x].end()))
 	    {
                 if(return_val == 1)  
                 leg_times[x]++;
                 else if(return_val == -1)
                 atk_times[x]++;
-                pt[x] = cur_port;		
+                pt[x].insert(cur_port);		
 		fl=1;
 		struct timeval t;
 		gettimeofday(&t, NULL);
@@ -200,7 +206,7 @@ int main(int argc, char *argv[]) {
 	 {
              ip_count++;
              arr[ip_count] = cur_ip;
-             pt[ip_count] = cur_port;
+             pt[ip_count].insert(cur_port);
                 if(return_val == 1)
                 {leg_times[ip_count] = 1;
                  atk_times[ip_count] = 0;
@@ -216,11 +222,11 @@ int main(int argc, char *argv[]) {
          }		 
          // FOR DEBUG PURPOSES
           
-	  if(cur_ip_pos >= 0)
+	  if(cur_ip_pos >= 0 && cflag)
           {		  
 	  float ans = (float)atk_times[cur_ip_pos] / (float)(atk_times[cur_ip_pos] + leg_times[cur_ip_pos]);
-	 // std::cout <<"Percentage" << ans <<std::endl;
-	  if(ans > 0.1 && (atk_times[cur_ip_pos] + leg_times[cur_ip_pos]) >= 4)
+	  std::cout <<"\nPercentage" <<arr[cur_ip_pos]<<" "<< ans <<std::endl;
+	  if(ans > 0.15 && (atk_times[cur_ip_pos] + leg_times[cur_ip_pos]) >= 4)
           {
             char* c = &ip[0];
 	    int st = atoi(start_time);

@@ -315,7 +315,7 @@ void Session::scan(std::istream *in) {
             }
            if(c->syscall_list_count.find("SyS_shutdown") != c->syscall_list_count.end() || c->syscall_list_count.find("sock_destroy_inode") != c->syscall_list_count.end() || c->syscall_list_count.find("__sock_release")!= c->syscall_list_count.end() || c->syscall_list_count.find("sock_close")!= c->syscall_list_count.end() )
             {
-              mq->send(c->toString().c_str(), c->toString().length(), 0); 
+              mq->send(c->toString(1).c_str(), c->toString(1).length(), 0); 
               c->syscall_list_count.clear();
               c->syscall_list_time.clear();
               c->port = -1;
@@ -388,7 +388,7 @@ void Session::push() {
     // loop through each connection
     for (auto conn_list : conns)
       for (auto conn : conn_list.second)
-        mq->send(conn.second.toString().c_str(), conn.second.toString().length(), 0);
+        mq->send(conn.second.toString(conn.second.cflag).c_str(), conn.second.toString(conn.second.cflag).length(), 0);
 
     // sleep one second after computation
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -400,7 +400,7 @@ void Session::push() {
  * module
  * @return A string that the consumer can parse
  */
-std::string Connection::toString() {
+std::string Connection::toString(int cflag) {
   std::string ret1, ret2;
 
   // Order the vects correctly
@@ -437,10 +437,15 @@ std::string Connection::toString() {
   ret1.append(std::to_string(port));
   ret1.append("=");
   ret1.append(std::to_string(first_timestamp));
+  if(cflag)
+  ret1.append("C\0");
+  else
   ret1.append("$\0");
 
   //ret2.back() = '|';
   //ret2.push_back('\0');
+  //std::cout << "##: " <<ret2 + ret1;
+
   return ret2 + ret1;
 }
 

@@ -20,13 +20,14 @@ struct Connection {
   tbb::concurrent_unordered_map<std::string, long long> syscall_list_time;
   unsigned int tid = -1, pid = -1;
   int port = -1;
+  int cflag = 0;
   int first_timestamp = -1;
   long long prev = 0;
   std::string last_call;
   std::string ip_addr;
 
   Connection() = default;
-  std::string toString();
+  std::string toString(int cflag);
 };
 
 /**
