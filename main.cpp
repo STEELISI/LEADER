@@ -18,6 +18,7 @@ std::ofstream piper;
 std::string arr[5000];
 int leg_times[5000];
 int atk_times[5000];
+char first_seen[5000][11];
 std::set<std::string> pt[5000];
 //std::string pt[5000];
 int ip_count = -1;
@@ -95,7 +96,7 @@ int main(int argc, char *argv[]) {
 
     mq_data.receive(conn, 4096, recvd_size, priority);
 
-    std::cout << "recieved message" << std::endl;
+    //std::cout << "recieved message" << std::endl;
 
     // If message is readable analyze and output result
     int cflag = 0;
@@ -112,9 +113,27 @@ int main(int argc, char *argv[]) {
       int j=0;
       int k = 0;
       int l = 0;
+      int sum = 0;
+      int curno = 0;
       for(int i=0;i<4096;i++) {
 	      if(conn[i] != '|' && conn_flag == 0)
-	        conn_ex[i] = conn[i];
+	      { 
+	          conn_ex[i] = conn[i];
+
+		  if(conn[i] == ',')
+	          {
+	                  sum+= curno;
+	                  curno = 0;		  
+			  continue;
+	          }		  
+		  int x = conn[i] - '0';
+		  if(curno == 0)
+		      curno = x;
+		  else
+	              curno = curno * 10 + x;
+
+
+              }		      
 	      else {
 		if(conn[i] == '|')      
 		{ conn_ex[i] = '\0';
@@ -165,8 +184,9 @@ int main(int argc, char *argv[]) {
       std::string  connectionstr(conn_ex);
       if(empty.compare(conn_ex))
       {	
-          return_val = model.analyze_conn(conn_ex);	      
-          std::cout <<"\n\n\nConnection: "<< conn_ex <<" CLASSIFIED: "<< return_val <<" IP "<<ip <<":"<<port<<" = " << start_time << std::endl<<std::endl;
+          return_val = model.analyze_conn(conn_ex);
+          if(sum < 100000)return_val=1;	  
+          std::cout <<"\n\n\nConnection: "<< conn_ex <<" CLASSIFIED: "<< return_val <<" IP "<<ip <<":"<<port<<" = " << start_time <<" F="<<cflag<< " SUM="<<sum<<std::endl<<std::endl;
          
          // FOR DEBUG PURPOSES
 	 int exists = 0;
@@ -182,7 +202,7 @@ int main(int argc, char *argv[]) {
                 cur_ip_pos = x;
             }		   
 	    std::set<std::string>::iterator it = pt[x].find(cur_port); 
-            if(!(cur_ip.compare(arr[x])) && (it == pt[x].end()))
+            if(!(cur_ip.compare(arr[x])) && (it == pt[x].end()) && cflag)
 	    {
                 if(return_val == 1)  
                 leg_times[x]++;
@@ -199,10 +219,10 @@ int main(int argc, char *argv[]) {
 	    //   break;
 	    struct timeval t;
 	    gettimeofday(&t, NULL);
-	    std::cout <<"\n\n\n "<<t.tv_sec<<" STATS: "<<arr[x]<<" "<<leg_times[x]<<" "<<atk_times[x];
+	    //std::cout <<"\n\n\n "<<t.tv_sec<<" STATS: "<<arr[x]<<" "<<leg_times[x]<<" "<<atk_times[x];
 	 }	 
          
-	 if(fl == 0)
+	 if(fl == 0 && cflag)
 	 {
              ip_count++;
              arr[ip_count] = cur_ip;
@@ -216,6 +236,8 @@ int main(int argc, char *argv[]) {
 		 leg_times[ip_count] = 0;
                  atk_times[ip_count] = 1;
                 }
+		for(int i=0;i<11;i++)
+		    first_seen[ip_count][i] = start_time[i];
 	     struct timeval t;
 	     gettimeofday(&t, NULL);
              std::cout <<"\n\n\n "<<t.tv_sec<<" STATS: "<<arr[ip_count]<<" "<<leg_times[ip_count]<<" "<<atk_times[ip_count];
@@ -225,11 +247,12 @@ int main(int argc, char *argv[]) {
 	  if(cur_ip_pos >= 0 && cflag)
           {		  
 	  float ans = (float)atk_times[cur_ip_pos] / (float)(atk_times[cur_ip_pos] + leg_times[cur_ip_pos]);
-	  std::cout <<"\nPercentage" <<arr[cur_ip_pos]<<" "<< ans <<std::endl;
-	  if(ans > 0.15 && (atk_times[cur_ip_pos] + leg_times[cur_ip_pos]) >= 4)
+	  std::cout <<"\nPercentage " <<arr[cur_ip_pos]<<" "<< ans <<std::endl;
+	  if(ans > 0.33 && (atk_times[cur_ip_pos] + leg_times[cur_ip_pos]) >= 3)
           {
             char* c = &ip[0];
-	    int st = atoi(start_time);
+	    int st = atoi(first_seen[cur_ip_pos]);
+	    //start_time);
              if (inet_pton(AF_INET, c, &ip_addr) != 0) {
 		     std::cout <<"\nBlacklisting IP "<<ip<<" "<<ip_addr<<std::endl;
                      blacklistIP(ip_addr);
