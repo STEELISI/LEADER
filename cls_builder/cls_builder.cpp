@@ -8,6 +8,10 @@
 #include <exception>
 #include <iostream>
 #include <regex>
+#include <fstream>
+//#include <sys/time.h>
+#include <signal.h>
+#include <string>
 
 // enum for the CSV inputs made by SystemTap
 enum CSV {
@@ -323,6 +327,7 @@ void Session::scan(std::istream *in) {
               c->prev = 0;
               c->port = 0;
 	      c->last_call = "";
+	      c->cflag = 1;
             } 
           }
         } else {
@@ -382,18 +387,87 @@ void Session::scan(std::istream *in) {
 /**
  * This function pushes all current connections through the msgqueue every second
  */
+/*void Session::push() {
+  // run forever
+  while (true) {
+    // loop through each connection
+    for (auto conn_list : conns)
+      for (auto conn : conn_list.second)
+      {
+	      std::cout << "LAST CALL " <<conn.second.last_call<<" "<<conn.second.syscall_list_time[std::string(conn.second.last_call)];      
+	if ( !conn.second.cflag && conn.second.syscall_list_time.find(conn.second.last_call) != conn.second.syscall_list_time.end())
+	{	conn.second.prev += 100000;
+		long long val = conn.second.syscall_list_time[std::string(conn.second.last_call)] + 100000;
+		conn.second.syscall_list_time[std::string(conn.second.last_call)] = val;
+		//conn.second.syscall_list_time.insert({conn.second.last_call,val});
+		std::cout << "ADDED " <<val <<" "<<conn.second.syscall_list_time[std::string(conn.second.last_call)]<<" "<<conn.second.toString(conn.second.cflag)<<"\n";
+	}	
+        mq->send(conn.second.toString(conn.second.cflag).c_str(), conn.second.toString(conn.second.cflag).length(), 0);
+      }	
+
+    // sleep one second after computation
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+}*/
+
+
 void Session::push() {
   // run forever
   while (true) {
     // loop through each connection
     for (auto conn_list : conns)
       for (auto conn : conn_list.second)
+      {
+        /*std::cout << "LAST CALL " <<conn.second.last_call<<" "<<conn.second.syscall_list_time[std::string(conn.second.last_call)];      
+        if ( !conn.second.cflag && conn.second.syscall_list_time.find(conn.second.last_call) != conn.second.syscall_list_time.end())
+        {       conn.second.prev += 100000;
+                long long val = conn.second.syscall_list_time[std::string(conn.second.last_call)] + 100000;
+                conn.second.syscall_list_time[std::string(conn.second.last_call)] = val;
+                //conn.second.syscall_list_time.insert({conn.second.last_call,val});
+                std::cout << "ADDED " <<val <<" "<<conn.second.syscall_list_time[std::string(conn.second.last_call)]<<" "<<conn.second.toString(conn.second.cflag)<<"\n";
+        }*/
+        int ret = conn.second.update();	      
+	if(ret)
+	mq->send(conn.second.toString(1).c_str(), conn.second.toString(1).length(), 0);	
+	else
         mq->send(conn.second.toString(conn.second.cflag).c_str(), conn.second.toString(conn.second.cflag).length(), 0);
+      } 
 
     // sleep one second after computation
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   }
 }
+
+
+
+
+int Connection::update(){
+
+	std::cout << "LAST CALL " <<last_call<<" "<<syscall_list_time[last_call];
+        if ( !cflag && syscall_list_time.find(last_call) != syscall_list_time.end())
+        {       //prev += 100000;
+
+                     struct timeval t;
+                     gettimeofday (&t, NULL);
+                     long long  dur = 1000000 * t.tv_sec + t.tv_usec;
+                long long val = ((dur - prev)/100) + syscall_list_time[last_call];
+                syscall_list_time[last_call] = val;
+                //conn.second.syscall_list_time.insert({conn.second.last_call,val});
+                std::cout << "ADDED " <<val <<" "<<syscall_list_time[last_call]<<" "<<toString(cflag)<<"\n";
+		if(val > 100000 && (last_call.compare("sock_read_iter") != 0 || last_call.compare("sock_recvmsg") != 0 || last_call.compare("sock_write_iter") != 0))
+	        {
+			cflag = 1;
+			return 1;
+	        }		
+        }
+	return 0;
+}
+
+
+
+
+
+
 
 /*!
  * This function returns a string for each connection readable by the ML

@@ -28,6 +28,7 @@ struct Connection {
 
   Connection() = default;
   std::string toString(int cflag);
+  int update();
 };
 
 /**
