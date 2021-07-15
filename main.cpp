@@ -215,6 +215,23 @@ int main(int argc, char *argv[]) {
 		std::cout <<"\n\n\n "<<t.tv_sec<<" STATS: "<<arr[x]<<" "<<leg_times[x]<<" "<<atk_times[x];
 		break;
             }
+	    else if(!(cur_ip.compare(arr[x])) && !(it == pt[x].end()) && cflag)
+            {
+	       if(return_val == -1)
+	       { 
+		 leg_times[x]--;
+		 atk_times[x]++;
+		 if(leg_times[x] < 0)
+	         {		 
+	           leg_times[x] = 0;
+		   atk_times[x]++;
+	         }		 
+                 struct timeval t;
+                 gettimeofday(&t, NULL);
+		 std::cout <<"\n\n\n "<<t.tv_sec<<" STATS: "<<arr[x]<<" "<<leg_times[x]<<" "<<atk_times[x];
+	       }	       
+
+            }		    
 	    //if(fl == 2)
 	    //   break;
 	    struct timeval t;
@@ -248,7 +265,7 @@ int main(int argc, char *argv[]) {
           {		  
 	  float ans = (float)atk_times[cur_ip_pos] / (float)(atk_times[cur_ip_pos] + leg_times[cur_ip_pos]);
 	  std::cout <<"\nPercentage " <<arr[cur_ip_pos]<<" "<< ans <<std::endl;
-	  if(ans > 0.33 && (atk_times[cur_ip_pos] + leg_times[cur_ip_pos]) >= 3)
+	  if(ans > 0.5 && (atk_times[cur_ip_pos] + leg_times[cur_ip_pos]) >= 2)
           {
             char* c = &ip[0];
 	    int st = atoi(first_seen[cur_ip_pos]);
