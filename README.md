@@ -1,9 +1,9 @@
 # LEADER: Low-Rate Denial of Service Defense
 
 ## About
-LEADER leverages a novel combination of runtime monitoring and offline binary program analysis to protect a deploying server against different variants of Low-Rate DDoS attacks.
+Leader is a novel application-agnostic and  attack-agnostic defense against exploit-based Denial-of-Service Attacks (exDoS)
 
-[Read more](https://steel.isi.edu/Projects/ddosdefense/)
+[Read more](https://steel.isi.edu/projects/Leader/)
 
 ## Installation
 The installation uses CMake and assumes that you have the following libraries available:
@@ -24,15 +24,16 @@ make
 ./build/leader elliptic_envelope.mlmodel normalization.pkl standardization.pkl
 
 ## Members and Collaborators
-* Haoda Wang
-* Christophe Hauser
-* Jelena Mirkovic
-* Nicolaas Weideman
+PI: Jelena Mirkovic and Christophe Hauser
+* Genevieve Bartlett
 * Rajat Tandon
+* Haoda Wang
+* Nicolaas Weideman
+* Shushan Arakelyan
 
 
 
-## Install PHP 5.3
+## Links for Installing PHP 5.3:
 https://askubuntu.com/questions/1052746/can-i-install-php-5-3-5-on-ubuntu-server-18-04-lts
 ./configure --with-apxs2
 LoadModule php5_module /usr/lib/apache2/modules/libphp5.so
