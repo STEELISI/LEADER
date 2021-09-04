@@ -1,4 +1,4 @@
-# LEADER: Low-Rate Denial of Service Defense
+# LEADER: Defense Against Exploit-Based Denial-of-Service Attacks on Web Servers
 
 ## About
 Leader is a novel application-agnostic and  attack-agnostic defense against exploit-based Denial-of-Service Attacks (exDoS)
