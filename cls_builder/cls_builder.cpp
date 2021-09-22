@@ -20,7 +20,11 @@ enum CSV {
   tid,
   pid,
   addr,
-  port
+  port,
+  memory,
+  pgfault,
+  filedesc,
+  cycles
 };
 
 /**
@@ -99,6 +103,10 @@ void Session::scan(std::istream *in) {
       unsigned int this_pid = -1, this_tid = -1;
       int conn_port = -1;
       long long this_time = 0;
+      long long this_memory = 0;
+      long long this_pgfault = 0;
+      long long this_filedesc = 0;
+      long long this_cycles = 0;
       bool has_port = false;
       std::string ip, call;
       int ip_flag = 0;
@@ -119,6 +127,20 @@ void Session::scan(std::istream *in) {
           this_pid = std::stoi(*i);
         else if (count == timestamp)
           this_time = std::stoll(*i);
+	else if (count == memory)
+	  this_memory = std::stoll(*i);
+	else if (count == pgfault)
+	  this_pgfault = std::stoll(*i);
+	else if (count == filedesc)
+	  this_filedesc = std::stoll(*i);
+	else if (count == cycles)
+	{  this_cycles = std::stoll(*i);
+		if(this_cycles < 0 || this_cycles > 100000000000)
+		{
+			this_cycles = 0;
+		}	
+
+        }		
         else if (count == addr && *i != "-1") {
           ip_flag = 1;
           ip = *i;
@@ -160,10 +182,25 @@ void Session::scan(std::istream *in) {
           //std::cout << "LMN: " << line << std::endl;
           c.syscall_list_count.insert({call, 1});
           c.syscall_list_time.insert({call, 0});
+	  c.syscall_list_memory.insert({call, 0});
+	  c.syscall_list_pgfault.insert({call, 0});
+	  c.syscall_list_filedesc.insert({call, 0});
+	  c.syscall_list_cycles.insert({call, 0});
 	  c.syscall_list_count.insert({seq_read_send, 0});
           c.syscall_list_time.insert({seq_read_send, 0});
+          c.syscall_list_memory.insert({seq_read_send, 0});
+	  c.syscall_list_pgfault.insert({seq_read_send, 0});
+	  c.syscall_list_filedesc.insert({seq_read_send, 0});
+	  c.syscall_list_cycles.insert({seq_read_send, 0});
+
+
           c.last_call = call; 
 	  c.prev = this_time;
+	  c.prev_memory = this_memory;
+	  c.prev_pgfault = this_pgfault;
+	  c.prev_filedesc = this_filedesc;
+	  c.prev_cycles = this_cycles;
+
 	  c.first_timestamp = this_time / 1000000;
 	  std::cout << "\nFIRST: "<<c.first_timestamp<<"\n";
 	  }
@@ -201,21 +238,51 @@ void Session::scan(std::istream *in) {
 	      {
 	      c->syscall_list_count.clear();
               c->syscall_list_time.clear();
+              c->syscall_list_memory.clear();
+              c->syscall_list_pgfault.clear();
+              c->syscall_list_filedesc.clear();
+              c->syscall_list_cycles.clear();
+
 	      c->prev = 0;
 	      c->ip_addr = "";
               c->port = 0;
 	      c->prev = 0;
+              c->prev_memory = 0;
+              c->prev_pgfault = 0;
+              c->prev_filedesc = 0;
+              c->prev_cycles = 0;
 	      c->first_timestamp = -1;
 	      c->last_call = "";
               c->syscall_list_count.insert({seq_read_send, 0});
               c->syscall_list_time.insert({seq_read_send, 0});
+              c->syscall_list_memory.insert({seq_read_send, 0});
+	      c->syscall_list_pgfault.insert({seq_read_send, 0});
+	      c->syscall_list_filedesc.insert({seq_read_send, 0});
+	      c->syscall_list_cycles.insert({seq_read_send, 0});
 
               }	      
               //std::cout << "LMN1: " << line << std::endl;		      
               c->syscall_list_count.insert({call, 1});
               long long diff = (c->prev == 0) ? 0 : (this_time - c->prev);
+	      long long diff_memory = (c->prev_memory == 0) ? 0 : (this_memory - c->prev_memory);
+	      long long diff_pgfault = (c->prev_pgfault == 0) ? 0 : (this_pgfault - c->prev_pgfault);
+	      long long diff_filedesc = (c->prev_filedesc == 0) ? 0 : (this_filedesc - c->prev_filedesc);
+	      long long diff_cycles = (c->prev_cycles == 0) ? 0 : (this_cycles - c->prev_cycles);
+	      if(diff_cycles < 0)
+		      diff_cycles = diff_cycles * -1;
+
               c->syscall_list_time.insert({call,diff});
+              c->syscall_list_memory.insert({call,diff_memory});
+	      c->syscall_list_pgfault.insert({call,diff_pgfault});
+	      c->syscall_list_filedesc.insert({call,diff_filedesc});
+	      c->syscall_list_cycles.insert({call,diff_cycles});
+
 	      c->prev = this_time;
+              c->prev_memory = this_memory;
+	      c->prev_pgfault = this_pgfault;
+	      c->prev_filedesc = this_filedesc;
+	      c->prev_cycles = this_cycles;
+
 	      c->first_timestamp = this_time / 1000000;
 	      }
 	      if(ip_flag == 1)
@@ -237,12 +304,20 @@ void Session::scan(std::istream *in) {
 	             {
                         c->syscall_list_count.insert({seq_read_send, 1});
                         c->syscall_list_time.insert({seq_read_send, 1});			     
+                        c->syscall_list_memory.insert({seq_read_send, 1});
+      			c->syscall_list_pgfault.insert({seq_read_send, 1});
+                        c->syscall_list_filedesc.insert({seq_read_send, 1});					                            c->syscall_list_cycles.insert({seq_read_send, 1});
+ 
 
 	             }
                      else
 	             {
                         c->syscall_list_count.insert({seq_read_send, 1000000});
                         c->syscall_list_time.insert({seq_read_send, 1000000});
+                        c->syscall_list_memory.insert({seq_read_send, 1});                  
+			c->syscall_list_pgfault.insert({seq_read_send, 1});
+			c->syscall_list_filedesc.insert({seq_read_send, 1});
+			c->syscall_list_cycles.insert({seq_read_send, 1});
 
                      }
 
@@ -256,20 +331,49 @@ void Session::scan(std::istream *in) {
               {
               c->syscall_list_count.clear();
               c->syscall_list_time.clear();
+              c->syscall_list_memory.clear();
+	      c->syscall_list_pgfault.clear();
+	      c->syscall_list_filedesc.clear();
+	      c->syscall_list_cycles.clear();
+
               c->syscall_list_count.insert({seq_read_send, 0});
               c->syscall_list_time.insert({seq_read_send, 0});
+              c->syscall_list_memory.insert({seq_read_send, 0});                  
+	      c->syscall_list_pgfault.insert({seq_read_send, 0});
+	      c->syscall_list_filedesc.insert({seq_read_send, 0});
+	      c->syscall_list_cycles.insert({seq_read_send, 0});
               c->prev = 0;
+              c->prev_memory = 0;
+              c->prev_pgfault = 0;
+              c->prev_filedesc = 0;
+              c->prev_cycles = 0;
+
               c->ip_addr = "";
               c->port = 0;
-              c->prev = 0;
 	      c->first_timestamp = -1;
 	      c->last_call = "";
               //std::cout << "LMN1: " << line << std::endl;
               c->syscall_list_count.insert({call, 1});
               long long diff = (c->prev == 0) ? 0 : (this_time - c->prev);
+              long long diff_memory = (c->prev_memory == 0) ? 0 : (this_memory - c->prev_memory);
+	      long long diff_pgfault = (c->prev_pgfault == 0) ? 0 : (this_pgfault - c->prev_pgfault);
+              long long diff_filedesc = (c->prev_filedesc == 0) ? 0 : (this_filedesc - c->prev_filedesc);
+	      long long diff_cycles = (c->prev_cycles == 0) ? 0 : (this_cycles - c->prev_cycles);
+              if(diff_cycles < 0)
+                      diff_cycles = diff_cycles * -1;
+
               c->syscall_list_time.insert({call,diff});
+              c->syscall_list_memory.insert({call,diff_memory});
+              c->syscall_list_pgfault.insert({call,diff_pgfault});
+              c->syscall_list_filedesc.insert({call,diff_filedesc});
+	      c->syscall_list_cycles.insert({call,diff_cycles});
+
 	      c->last_call = call;
               c->prev = this_time;
+              c->prev_memory = this_memory;
+	      c->prev_pgfault = this_pgfault;
+	      c->prev_filedesc = this_filedesc;
+              c->prev_cycles = this_cycles;
                
               if(ip_flag == 1)
               { 
@@ -284,8 +388,28 @@ void Session::scan(std::istream *in) {
               else{
               c->syscall_list_count.at(call) += 1;
               long long diff = (c->prev == 0) ? 0 : (this_time - c->prev);
+              long long diff_memory = (c->prev_memory == 0) ? 0 : (this_memory - c->prev_memory);
+              long long diff_pgfault = (c->prev_pgfault == 0) ? 0 : (this_pgfault - c->prev_pgfault);
+              long long diff_filedesc = (c->prev_filedesc == 0) ? 0 : (this_filedesc - c->prev_filedesc);
+              long long diff_cycles = (c->prev_cycles == 0) ? 0 : (this_cycles - c->prev_cycles);
+              if(diff_cycles < 0)
+                      diff_cycles = diff_cycles * -1;
+
               c->syscall_list_time.at(call) += (diff);
+              c->syscall_list_memory.at(call) += (diff_memory);
+              c->syscall_list_pgfault.at(call) += (diff_pgfault);
+              c->syscall_list_filedesc.at(call) += (diff_filedesc);
+              c->syscall_list_cycles.at(call) += (diff_cycles);
+
 	      c->prev = this_time;
+              c->prev_memory = this_memory;
+              c->prev_pgfault = this_pgfault;
+              c->prev_filedesc = this_filedesc;
+              c->prev_cycles = this_cycles;
+
+
+
+
 	      if(ip_flag == 1){		      
 	      c->ip_addr = ip;
                 if(conn_port > 0)
@@ -309,6 +433,10 @@ void Session::scan(std::istream *in) {
                         c->syscall_list_time.at(seq_read_send) += 1000000; 
 
                      }
+                     c->syscall_list_memory.at(seq_read_send) += 1;
+                     c->syscall_list_pgfault.at(seq_read_send) += 1;
+                     c->syscall_list_filedesc.at(seq_read_send) += 1;
+                     c->syscall_list_cycles.at(seq_read_send) += 1;
 
                }
 
@@ -322,12 +450,21 @@ void Session::scan(std::istream *in) {
               mq->send(c->toString(1).c_str(), c->toString(1).length(), 0); 
               c->syscall_list_count.clear();
               c->syscall_list_time.clear();
+              c->syscall_list_memory.clear();
+              c->syscall_list_pgfault.clear();
+              c->syscall_list_filedesc.clear();
+              c->syscall_list_cycles.clear();
               c->port = -1;
               c->ip_addr = "";
               c->prev = 0;
               c->port = 0;
 	      c->last_call = "";
 	      c->cflag = 1;
+              c->prev_memory = 0;
+              c->prev_pgfault = 0;
+              c->prev_filedesc = 0;
+              c->prev_cycles = 0;
+
             } 
           }
         } else {
@@ -341,10 +478,28 @@ void Session::scan(std::istream *in) {
 	    //std::cout << "LMN2: " << line << std::endl;
             c.syscall_list_count.insert({call, 1});
             c.syscall_list_time.insert({call, 0});
+
+          c.syscall_list_memory.insert({call, 0});
+          c.syscall_list_pgfault.insert({call, 0});
+          c.syscall_list_filedesc.insert({call, 0});
+          c.syscall_list_cycles.insert({call, 0});
+          c.syscall_list_memory.insert({seq_read_send, 0});
+          c.syscall_list_pgfault.insert({seq_read_send, 0});
+          c.syscall_list_filedesc.insert({seq_read_send, 0});
+          c.syscall_list_cycles.insert({seq_read_send, 0});
+
+
             c.syscall_list_count.insert({seq_read_send, 0});
             c.syscall_list_time.insert({seq_read_send, 0});
 
 	    c.prev = this_time;
+
+          c.prev_memory = this_memory;
+          c.prev_pgfault = this_pgfault;
+          c.prev_filedesc = this_filedesc;
+          c.prev_cycles = this_cycles;
+
+
 	    c.first_timestamp = this_time / 1000000;
 	    std::cout << "\nFIRST: "<<c.first_timestamp<<"\n";
 	    }
@@ -475,7 +630,7 @@ int Connection::update(){
  * @return A string that the consumer can parse
  */
 std::string Connection::toString(int cflag) {
-  std::string ret1, ret2;
+  std::string ret1, ret2, ret3, ret4, ret5, ret6;
 
   // Order the vects correctly
 /*  const std::vector<std::string> vect = {
@@ -503,6 +658,33 @@ std::string Connection::toString(int cflag) {
       ret2 += std::to_string(syscall_list_time.at(entry)) + ",";
     else
       ret2.append("0,");
+
+    // Add all memory
+    if (syscall_list_memory.find(entry) != syscall_list_memory.end())
+      ret3 += std::to_string(syscall_list_memory.at(entry)) + ",";
+    else
+      ret3.append("0,");
+
+
+    // Add all pgfault
+    if (syscall_list_pgfault.find(entry) != syscall_list_pgfault.end())
+      ret4 += std::to_string(syscall_list_pgfault.at(entry)) + ",";
+    else
+      ret4.append("0,");
+
+
+    // Add all filedesc
+    if (syscall_list_filedesc.find(entry) != syscall_list_filedesc.end())
+      ret5 += std::to_string(syscall_list_filedesc.at(entry)) + ",";
+    else
+      ret5.append("0,");
+
+    // Add all cycles
+    if (syscall_list_cycles.find(entry) != syscall_list_cycles.end())
+      ret6 += std::to_string(syscall_list_cycles.at(entry)) + ",";
+    else
+      ret6.append("0,");
+
   }
 
   ret1.append("1|");
@@ -520,6 +702,6 @@ std::string Connection::toString(int cflag) {
   //ret2.push_back('\0');
   //std::cout << "##: " <<ret2 + ret1;
 
-  return ret2 + ret1;
+  return ret3 + ret4 + ret5 + ret6 + ret2 + ret1;
 }
 

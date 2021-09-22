@@ -184,6 +184,8 @@ int main(int argc, char *argv[]) {
       std::string  connectionstr(conn_ex);
       if(empty.compare(conn_ex))
       {	
+	  std::cout <<"\n\nBD: "<<conn_ex<<" #"<<std::endl;    
+
           return_val = model.analyze_conn(conn_ex);
           if(sum < 100000)return_val=1;	  
           std::cout <<"\n\n\nConnection: "<< conn_ex <<" CLASSIFIED: "<< return_val <<" IP "<<ip <<":"<<port<<" = " << start_time <<" F="<<cflag<< " SUM="<<sum<<std::endl<<std::endl;
