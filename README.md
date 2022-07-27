@@ -25,12 +25,11 @@ make
 
 ## Members and Collaborators
 PI: Jelena Mirkovic and Christophe Hauser
-* Genevieve Bartlett
 * Rajat Tandon
 * Haoda Wang
 * Nicolaas Weideman
 * Shushan Arakelyan
-
+* Genevieve Bartlett
 
 
 ## Links for Installing PHP 5.3:
